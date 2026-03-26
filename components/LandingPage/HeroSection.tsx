@@ -4,8 +4,10 @@ import React, { useEffect, useState } from "react";
 import GuestNavbar from "./GuestNavbar";
 import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const HeroSection = () => {
+  const { data: session } = useSession();
   const router = useRouter();
   const [theme, setTheme] = useState<string | null>(null);
 
@@ -65,9 +67,9 @@ const HeroSection = () => {
             <div className="flex md:flex-row flex-col justify-center gap-4 w-full md:w-auto">
               <button
                 className="bg-blue-500 text-white md:px-4 px-3 py-2 rounded-lg hover:bg-blue-600 transition flex justify-center items-center gap-2"
-                onClick={() => router.push("/auth/login")}
+                onClick={() => router.push(session ? "/dashboard" : "/login")}
               >
-                Get Started <ArrowUpRight />
+                {session ? "Enter Dashboard" : "Get Started"} <ArrowUpRight />
               </button>
               <button
                 className="border border-blue-500 text-blue-500 px-6 py-3 rounded-lg hover:bg-blue-600 hover:text-white transition"

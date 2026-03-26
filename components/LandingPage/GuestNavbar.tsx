@@ -8,9 +8,12 @@ import { useState } from "react";
 import MobileMenu from "../MobileMenu";
 import { ThemeToggle } from "../ThemeToggle";
 import { Logo } from "../ui/Logo";
+import { useSession } from "next-auth/react";
 
 const GuestNavbar = () => {
+  const { data: session, status } = useSession();
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
+  const isLoading = status === "loading";
 
   return (
     <>
@@ -37,19 +40,32 @@ const GuestNavbar = () => {
         </div>
 
         {/* Auth Links */}
-        <div className="hidden sm:flex gap-4">
-          <button
-            type="button"
-            className="py-1 px-4 rounded-lg bg-blue-600 text-white"
-          >
-            Sign Up
-          </button>
-          <button
-            type="button"
-            className="py-1 px-4 rounded-lg ring-1 ring-blue-600 text-blue-600"
-          >
-            Log In
-          </button>
+        <div className="hidden sm:flex gap-4 items-center">
+          {isLoading ? (
+            <div className="h-10 w-24 bg-gray-200 animate-pulse rounded-lg"></div>
+          ) : session ? (
+            <Link
+              href="/dashboard"
+              className="py-2 px-6 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/register"
+                className="py-1 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+              >
+                Sign Up
+              </Link>
+              <Link
+                href="/login"
+                className="py-1 px-4 rounded-lg ring-1 ring-blue-600 text-blue-600 hover:bg-blue-50 transition"
+              >
+                Log In
+              </Link>
+            </>
+          )}
           <div className="">
             <ThemeToggle />
           </div>
