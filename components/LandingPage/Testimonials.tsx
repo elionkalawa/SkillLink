@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const testimonials = [
   {
     name: "Alice Mwangi",
@@ -37,10 +39,12 @@ const TestimonialsSection = () => {
               key={idx}
               className="bg-white dark:bg-gray-900/50 p-6 rounded-xl shadow hover:shadow-lg transition flex flex-col justify-center items-center"
             >
-              <img
+              <Image
                 src={t.img}
                 alt={t.name}
-                className="w-20 h-20 rounded-full mr-4 object-cover"
+                width={80}
+                height={80}
+                className="w-20 h-20 rounded-full object-cover mb-4"
               />
               <p className="text-gray-700 dark:text-gray-400 mb-4 text-center">
                 “{t.quote}”
