@@ -5,14 +5,14 @@ import SidebarItem from "./components/SidebarItem";
 import { Logo } from "@/components/ui/Logo";
 import {
   Bell,
-  ChevronsLeft,
-  ChevronsRight,
   CircleUser,
   Compass,
   LayoutDashboard,
   LogOut,
   Menu,
   MessageCircle,
+  PanelLeftClose,
+  PanelRightClose,
   Settings,
 } from "lucide-react";
 import { LogoIcon } from "@/components/ui/LogoIcon";
@@ -73,9 +73,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 className="hidden md:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 {collapsed ? (
-                  <ChevronsRight size={20} />
+                  <PanelRightClose size={20} />
                 ) : (
-                  <ChevronsLeft size={20} />
+                  <PanelLeftClose size={20} />
                 )}
               </button>
 
@@ -106,9 +106,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             />
             <SidebarItem
               icon={<Compass size={22} />}
-              label="Projects"
+              label="Marketplace"
               collapsed={collapsed}
-              route="/dashboard/projects"
+              route="/dashboard/explore"
               counter={0}
               activeRoute={activeRoute}
               onClick={() => setMobileOpen(false)}
@@ -162,7 +162,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <div className="p-4">
             <button
               onClick={() => signOut()}
-              className={`w-full cursor-pointer flex items-center justify-center gap-2 p-3 rounded-2xl bg-red-500 text-white ${collapsed ? "justify-center" : ""}`}
+              className={`w-full cursor-pointer flex items-center justify-center gap-2 p-3 rounded-2xl bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${collapsed ? "justify-center" : ""}`}
             >
               <LogOut size={22} />
               {!collapsed && <span className="font-bold">Sign Out</span>}

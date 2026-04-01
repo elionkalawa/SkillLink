@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import DashboardSkeleton from "./components/DashboardSkeleton";
 import StatsCards from "./components/StatsCards";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import WorkspaceListCard from "./components/WorkspaceListCard";
@@ -20,8 +21,12 @@ import { useUser } from "@/hooks";
 const DashboardPage = () => {
   const { user, isLoading } = useUser();
 
-  if (isLoading) return <div className="p-8">Loading dashboard...</div>;
-  if (!user) return <div className="p-8">Please log in to view the dashboard.</div>;
+  if (isLoading) return <DashboardSkeleton />;
+  if (!user) return <div className="p-10 flex flex-col items-center justify-center min-h-[50vh] text-center">
+    <h2 className="text-2xl font-bold mb-2">Not logged in</h2>
+    <p className="text-slate-500 mb-6 font-medium">Please log in to view the dashboard.</p>
+    <Link href="/login" className="px-6 py-3 bg-blue-primary text-white rounded-xl font-bold">Log in now</Link>
+  </div>;
 
   return (
     <div className="w-full py-4">
@@ -56,12 +61,14 @@ const DashboardPage = () => {
           </Link>
           <ThemeToggle />
           <Profile />
-          <Link
+
+          {/* <Link
             href="/dashboard/projects"
             className="flex items-center gap-2 px-6 py-4 text-sm rounded-xl bg-blue-primary text-white font-medium"
           >
             <span>Find a New Project</span>
-          </Link>
+          </Link> */}
+          
         </div>
       </section>
       {/*Stats Cards*/}
@@ -105,7 +112,7 @@ const DashboardPage = () => {
             </p>
           </div>
           <Link
-            href="/dashboard/projects"
+            href="/dashboard/explore"
             className="flex items-center justify-center w-full md:w-fit gap-2 px-6 py-4 text-sm rounded-xl bg-blue-primary text-white font-medium"
           >
             <span className="flex items-center gap-2">
@@ -129,7 +136,7 @@ const DashboardPage = () => {
           </div>
 
           <Link
-            href="/dashboard/projects"
+            href="/dashboard/explore"
             className="flex items-center justify-center w-full md:w-fit gap-2 px-6 py-4 text-sm rounded-xl bg-blue-primary text-white font-medium"
           >
             <span className="flex items-center gap-2">
@@ -140,6 +147,7 @@ const DashboardPage = () => {
 
         <div className="flex flex-col gap-4">
           <WorkspaceListCard
+            id="p1"
             title="SolarOS Dashboard"
             description="A modern and responsive dashboard for SolarOS, a solar energy management system."
             tags={["React", "Next.js", "Tailwind CSS", "TypeScript"]}

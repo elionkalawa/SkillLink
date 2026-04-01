@@ -43,7 +43,7 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       aria-label="Toggle dark mode"
-      className="w-10 h-10 flex items-center bg-slate-50 dark:bg-gray-800/50 justify-center rounded-full text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-300 relative overflow-hidden"
+      className="w-10 h-10 flex items-center bg-slate-100 dark:bg-gray-800/50 justify-center rounded-full text-black dark:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors duration-300 relative overflow-hidden"
     >
       <div className="relative flex items-center justify-center">
         <Sun
