@@ -5,6 +5,7 @@ import SidebarItem from "./components/SidebarItem";
 import { Logo } from "@/components/ui/Logo";
 import {
   Bell,
+  Briefcase,
   CircleUser,
   Compass,
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
 import { LogoIcon } from "@/components/ui/LogoIcon";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -97,7 +99,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             )}
             <SidebarItem
               icon={<LayoutDashboard size={22} />}
-              label="Dashboard"
+              label="Home"
               collapsed={collapsed}
               route="/dashboard"
               counter={0}
@@ -109,6 +111,24 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               label="Marketplace"
               collapsed={collapsed}
               route="/dashboard/explore"
+              counter={0}
+              activeRoute={activeRoute}
+              onClick={() => setMobileOpen(false)}
+            />
+            <SidebarItem
+              icon={<Briefcase size={22} />}
+              label="My Projects"
+              collapsed={collapsed}
+              route="/dashboard/my-projects"
+              counter={1}
+              activeRoute={activeRoute}
+              onClick={() => setMobileOpen(false)}
+            />
+            <SidebarItem
+              icon={<CircleUser size={22} />}
+              label="Profile"
+              collapsed={collapsed}
+              route="/dashboard/profile"
               counter={0}
               activeRoute={activeRoute}
               onClick={() => setMobileOpen(false)}
@@ -139,15 +159,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               onClick={() => setMobileOpen(false)}
             />
             <SidebarItem
-              icon={<CircleUser size={22} />}
-              label="Profile"
-              collapsed={collapsed}
-              route="/dashboard/profile"
-              counter={0}
-              activeRoute={activeRoute}
-              onClick={() => setMobileOpen(false)}
-            />
-            <SidebarItem
               icon={<Settings size={22} />}
               label="Settings"
               collapsed={collapsed}
@@ -156,16 +167,22 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               activeRoute={activeRoute}
               onClick={() => setMobileOpen(false)}
             />
+             <ThemeToggle variant="sidebar" collapsed={collapsed} />
           </nav>
           {/**
            SignOut*/}
-          <div className="p-4">
+          <div className="w-ful p-4 flex flex-col gap-4">
+           
             <button
               onClick={() => signOut()}
-              className={`w-full cursor-pointer flex items-center justify-center gap-2 p-3 rounded-2xl bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${collapsed ? "justify-center" : ""}`}
+              className="w-full flex items-center justify-center gap-2 p-4 font-bold rounded-2xl transition-all text-sm bg-rose-500/10 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/20 hover:text-rose-600 dark:hover:text-rose-400"
             >
-              <LogOut size={22} />
-              {!collapsed && <span className="font-bold">Sign Out</span>}
+              <LogOut size={22} className="text-xl shrink-0" />
+              {!collapsed && (
+                <span className="whitespace-nowrap">
+                  Sign Out
+                </span>
+              )}
             </button>
           </div>
         </aside>

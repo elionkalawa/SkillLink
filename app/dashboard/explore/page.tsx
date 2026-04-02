@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import ProjectCard from "./components/ProjectCard";
 import { MOCK_PROJECTS } from "./mockData";
+import TopNav from "../components/TopNav";
 
 const ExplorePage = () => {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -29,13 +30,16 @@ const ExplorePage = () => {
   return (
     <div className="w-full">
       {/* Header section */}
-      <section className="mb-10">
-        <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-          Explore Projects
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-bold text-md max-w-2xl leading-relaxed">
-          Join projects that push the boundaries of what&apos;s possible.
-        </p>
+      <section className="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
+            Explore Projects
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 font-bold text-md max-w-2xl leading-relaxed">
+            Join projects that push the boundaries of what&apos;s possible.
+          </p>
+        </div>
+        <TopNav />
       </section>
 
       {/* Search and filtering section */}

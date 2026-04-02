@@ -27,7 +27,7 @@ export default function Error({
       </h1>
       
       <p className="text-slate-500 dark:text-slate-400 font-bold text-md max-w-sm mb-10 leading-relaxed">
-        {error.message || "An unexpected error occurred while loading your dashboard."}
+        {error.message || "An unexpected error occurred while loading your settings."}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-4">

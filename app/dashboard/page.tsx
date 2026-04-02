@@ -2,26 +2,21 @@
 
 import {
   ArrowRight,
-  Bell,
   History,
-  MessageCircle,
   Sparkles,
   TrendingUp,
   Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-import DashboardSkeleton from "./components/DashboardSkeleton";
 import StatsCards from "./components/StatsCards";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import WorkspaceListCard from "./components/WorkspaceListCard";
-import Profile from "@/components/Profile";
+import TopNav from "./components/TopNav";
 import { useUser } from "@/hooks";
 
 const DashboardPage = () => {
-  const { user, isLoading } = useUser();
+  const { user } = useUser();
 
-  if (isLoading) return <DashboardSkeleton />;
   if (!user) return <div className="p-10 flex flex-col items-center justify-center min-h-[50vh] text-center">
     <h2 className="text-2xl font-bold mb-2">Not logged in</h2>
     <p className="text-slate-500 mb-6 font-medium">Please log in to view the dashboard.</p>
@@ -40,36 +35,7 @@ const DashboardPage = () => {
             You have 2 projects reaching milestones this week.
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard/notifications"
-            className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
-          >
-            <Bell className="text-slate-500 hover:text-blue-primary transition-colors" />
-            <span className="absolute top-0 right-0 text-xs text-white bg-notification rounded-full px-2 py-1 ">
-              2
-            </span>
-          </Link>
-          <Link
-            href="/dashboard/messages"
-            className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
-          >
-            <MessageCircle className="text-slate-500 hover:text-blue-primary transition-colors" />
-            <span className="absolute top-0 right-0 text-xs text-white bg-notification rounded-full px-2 py-1 ">
-              2
-            </span>
-          </Link>
-          <ThemeToggle />
-          <Profile />
-
-          {/* <Link
-            href="/dashboard/projects"
-            className="flex items-center gap-2 px-6 py-4 text-sm rounded-xl bg-blue-primary text-white font-medium"
-          >
-            <span>Find a New Project</span>
-          </Link> */}
-          
-        </div>
+        <TopNav />
       </section>
       {/*Stats Cards*/}
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 justify-start items-center gap-4 py-10 flex-wrap">

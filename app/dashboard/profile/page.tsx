@@ -15,6 +15,7 @@ import ProfileSkeleton from "./components/ProfileSkeleton";
 import SkillCard from "./components/SkillCard";
 import ContributionCard from "./components/ContributionCard";
 import StackBadge from "./components/StackBadge";
+import TopNav from "../components/TopNav";
 
 const ProfilePage = () => {
   const { user, isLoading } = useUser();
@@ -73,6 +74,14 @@ const ProfilePage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="w-full flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+            Profile
+          </h1>
+        </div>
+        <TopNav />
+      </div>
       {/* Hero Section */}
       <div className="relative bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-zinc-800">
         <div 

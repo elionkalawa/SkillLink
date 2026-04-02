@@ -12,7 +12,6 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error(error);
   }, [error]);
 
@@ -23,25 +22,25 @@ export default function Error({
       </div>
       
       <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-        Something went wrong!
+        Couldn&apos;t load projects
       </h1>
       
-      <p className="text-slate-500 dark:text-slate-400 font-bold text-md max-w-sm mb-10 leading-relaxed">
-        {error.message || "An unexpected error occurred while loading your dashboard."}
+      <p className="text-slate-500 dark:text-slate-400 font-bold text-md max-w-sm mb-10 leading-relaxed uppercase tracking-widest text-[10px]">
+        {error.message || "An unexpected error occurred while fetching your active projects and workspaces."}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <button
           onClick={() => reset()}
-          className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 text-white font-extrabold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20 active:scale-95"
+          className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-indigo-600 text-white font-extrabold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95"
         >
           <RefreshCcw size={20} />
-          <span>Try again</span>
+          <span>Refresh Page</span>
         </button>
         
         <Link
           href="/dashboard"
-          className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-white font-extrabold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm active:scale-95"
+          className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-white font-extrabold text-sm hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm active:scale-95"
         >
           <Home size={20} />
           <span>Return Home</span>

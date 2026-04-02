@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { AlertCircle, RefreshCcw, Home } from "lucide-react";
-import Link from "next/link";
+import { AlertCircle, RefreshCcw } from "lucide-react";
 
 export default function Error({
   error,
@@ -12,7 +11,6 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error(error);
   }, [error]);
 
@@ -23,11 +21,11 @@ export default function Error({
       </div>
       
       <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-        Something went wrong!
+        Failed to load notifications
       </h1>
       
       <p className="text-slate-500 dark:text-slate-400 font-bold text-md max-w-sm mb-10 leading-relaxed">
-        {error.message || "An unexpected error occurred while loading your dashboard."}
+        {error.message || "An unexpected error occurred while loading your notifications."}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -38,14 +36,6 @@ export default function Error({
           <RefreshCcw size={20} />
           <span>Try again</span>
         </button>
-        
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-white font-extrabold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-sm active:scale-95"
-        >
-          <Home size={20} />
-          <span>Return Home</span>
-        </Link>
       </div>
     </div>
   );
