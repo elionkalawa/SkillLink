@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import "./globals.css";
-import { Providers } from "@/components/Providers";
+import { Providers } from "@/providers/Providers";
 
 export default function RootLayout({
   children,

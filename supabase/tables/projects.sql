@@ -8,9 +8,15 @@ create table if not exists projects (
   title text not null,
   description text,
   owner_id uuid not null references next_auth.users(id) on delete cascade,
+  category text, 
   skills_required text[] default '{}',
+  tags text[] default '{}',
   max_team_size integer not null default 1,
   status project_status default 'open',
+  organization text,
+  deadline timestamp with time zone,
+  image_url text,
+  full_description text,
   created_at timestamp with time zone default now()
 );
 

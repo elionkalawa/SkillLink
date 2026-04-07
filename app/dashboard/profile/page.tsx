@@ -1,70 +1,141 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { 
   Mail, 
   Github, 
+  Linkedin,
   Globe, 
   MapPin, 
   Pencil, 
-  MoreHorizontal
+  MoreHorizontal,
+  X,
+  Save,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 import SkillCard from "./components/SkillCard";
-import ContributionCard from "./components/ContributionCard";
 import StackBadge from "./components/StackBadge";
 import TopNav from "../components/TopNav";
+import { toast } from "sonner";
+
+interface ProfileFormState {
+  name: string;
+  username: string;
+  bio: string;
+  profile_title: string;
+  location: string;
+  years_of_experience: string;
+  experience_level: string;
+  skills: string;
+  github_url: string;
+  linkedin_url: string;
+  portfolio_url: string;
+}
 
 const ProfilePage = () => {
-  const { user, isLoading } = useUser();
+  const { user, isLoading, refreshUser } = useUser();
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState<ProfileFormState>({
+    name: "",
+    username: "",
+    bio: "",
+    profile_title: "",
+    location: "",
+    years_of_experience: "",
+    experience_level: "",
+    skills: "",
+    github_url: "",
+    linkedin_url: "",
+    portfolio_url: "",
+  });
 
   if (isLoading) {
     return <ProfileSkeleton />;
   }
 
-  // Mock data for missing fields in the User type
-  const mockProfile = {
-    tagline: "Senior Full Stack Developer",
-    location: "San Francisco, CA",
-    buildingInPublic: true,
-    isPro: true,
-    coverImage: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", // Gradient as backdrop
-    website: "arivera.design",
-    github: "github.com/arivera",
-    currentStack: ["React", "Next.js", "Tailwind CSS", "Docker", "Redis", "Figma"],
-    skills: [
-      { name: "React", level: "EXPERT" },
-      { name: "TypeScript", level: "ADVANCED" },
-      { name: "Node.js", level: "EXPERT" },
-      { name: "PostgreSQL", level: "ADVANCED" },
-      { name: "System Design", level: "ADVANCED" },
-    ],
-    contributions: [
-      {
-        name: "SolarOS Dashboard",
-        role: "Lead Frontend",
-        tag: "SUSTAINABILITY",
-        icon: "S"
-      },
-      {
-        name: "Sentience AI Agent",
-        role: "Lead Frontend",
-        tag: "AI/ML",
-        icon: "S"
-      },
-      {
-        name: "Vault Protocol v2",
-        role: "Lead Frontend",
-        tag: "WEB3",
-        icon: "V"
+  const openEditor = () => {
+    setForm({
+      name: user?.name || "",
+      username: user?.username || "",
+      bio: user?.bio || "",
+      profile_title: user?.profile_title || user?.role || "",
+      location: user?.location || "",
+      years_of_experience:
+        user?.years_of_experience !== undefined && user?.years_of_experience !== null
+          ? String(user.years_of_experience)
+          : "",
+      experience_level: user?.experience_level || "",
+      skills: (user?.skills || []).map((skill) => skill.replace(/^#+/, "").trim()).join(", "),
+      github_url: user?.github_url || "",
+      linkedin_url: user?.linkedin_url || "",
+      portfolio_url: user?.portfolio_url || "",
+    });
+    setIsEditOpen(true);
+  };
+
+  const closeEditor = () => setIsEditOpen(false);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const skills = form.skills
+        .split(",")
+        .map((skill) => skill.replace(/^#+/, "").trim())
+        .filter(Boolean);
+
+      const years =
+        form.years_of_experience.trim() === ""
+          ? null
+          : Number(form.years_of_experience.trim());
+
+      if (years !== null && Number.isNaN(years)) {
+        throw new Error("Years of experience must be a number");
       }
-    ]
+
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim() || null,
+          username: form.username.trim() || null,
+          bio: form.bio.trim() || null,
+          profile_title: form.profile_title.trim() || null,
+          location: form.location.trim() || null,
+          years_of_experience: years,
+          experience_level: form.experience_level || null,
+          skills,
+          github_url: form.github_url.trim() || null,
+          linkedin_url: form.linkedin_url.trim() || null,
+          portfolio_url: form.portfolio_url.trim() || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update profile");
+      }
+
+      await refreshUser();
+      toast.success("Profile updated");
+      setIsEditOpen(false);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update profile";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const displayName = user?.name || "Alex Rivera";
-  const bio = user?.bio || "Engineering high-performance web systems with a focus on developer experience and sustainable architecture. Currently deep-diving into decentralized protocols and AI agent orchestration.";
+  const bio = user?.bio || "Add your bio from Settings so collaborators can understand your background and goals.";
+  const displayRole = user?.profile_title || user?.role || "Independent Developer";
+  const displayLocation = user?.location || "Location not set";
+  const displayExperienceLevel = user?.experience_level || "not set";
+  const currentStack = (user?.skills || []).map((skill) => skill.replace(/^#+/, "").trim());
   
   // Handle Google profile image resolution (default is 96px, which is too small for this UI)
   let profileImage = user?.image || "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=800&h=800&fit=crop";
@@ -84,10 +155,7 @@ const ProfilePage = () => {
       </div>
       {/* Hero Section */}
       <div className="relative bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden shadow-sm border border-slate-200 dark:border-zinc-800">
-        <div 
-          className="h-48 w-full" 
-          style={{ background: mockProfile.coverImage }}
-        />
+        <div className="h-40 w-full bg-slate-100 dark:bg-zinc-800" />
         
         <div className="px-8 pb-8">
           <div className="relative flex flex-col md:flex-row md:items-end -mt-16 gap-6">
@@ -111,30 +179,30 @@ const ProfilePage = () => {
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
                   {displayName}
                 </h1>
-                {mockProfile.isPro && (
-                  <span className="px-2 py-0.5 rounded-md bg-indigo-600 text-[10px] font-bold text-white uppercase tracking-wider">
-                    PRO
-                  </span>
+                {user?.username && (
+                  <span className="text-sm font-bold text-slate-400">@{user.username}</span>
                 )}
               </div>
               <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                {mockProfile.tagline}
+                {displayRole}
               </p>
               <div className="flex items-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <MapPin size={14} />
-                  {mockProfile.location}
+                  {displayLocation}
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
-                  Building in public
+                <span className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-xs font-bold capitalize">
+                  {displayExperienceLevel}
                 </span>
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-3 pb-2">
-              <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-all shadow-md shadow-indigo-200 dark:shadow-none active:scale-95">
+              <button
+                onClick={openEditor}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-all shadow-md shadow-indigo-200 dark:shadow-none active:scale-95"
+              >
                 <Pencil size={16} />
                 Edit profile
               </button>
@@ -161,14 +229,24 @@ const ProfilePage = () => {
                   <Mail size={16} />
                   {user?.email || "alex.r@skilllink.io"}
                 </a>
-                <a href={`https://${mockProfile.github}`} className="flex items-center gap-3 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
-                  <Github size={16} />
-                  {mockProfile.github}
-                </a>
-                <a href={`https://${mockProfile.website}`} className="flex items-center gap-3 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
-                  <Globe size={16} />
-                  {mockProfile.website}
-                </a>
+                {user?.github_url && (
+                  <a href={user.github_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+                    <Github size={16} />
+                    {user.github_url}
+                  </a>
+                )}
+                {user?.linkedin_url && (
+                  <a href={user.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+                    <Linkedin size={16} />
+                    {user.linkedin_url}
+                  </a>
+                )}
+                {user?.portfolio_url && (
+                  <a href={user.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+                    <Globe size={16} />
+                    {user.portfolio_url}
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -176,9 +254,12 @@ const ProfilePage = () => {
           <div className="space-y-4">
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Current Stack</h2>
             <div className="flex flex-wrap gap-2">
-              {mockProfile.currentStack.map(tech => (
+              {currentStack.map(tech => (
                 <StackBadge key={tech}>{tech}</StackBadge>
               ))}
+              {currentStack.length === 0 && (
+                <span className="text-xs text-slate-400 font-bold">No skills added yet.</span>
+              )}
             </div>
           </div>
         </div>
@@ -187,18 +268,22 @@ const ProfilePage = () => {
         <div className="lg:col-span-8 space-y-12">
           <div className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">Skills & Level</h2>
-              <p className="text-sm font-medium text-slate-400">Based on verified project contributions</p>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight">Skills</h2>
+              <p className="text-sm font-medium text-slate-400">Your current skill set</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mockProfile.skills.map((skill) => (
+              {currentStack.slice(0, 6).map((skill) => (
                 <SkillCard 
-                  key={skill.name} 
-                  name={skill.name} 
-                  level={skill.level} 
+                  key={skill} 
+                  name={skill} 
                 />
               ))}
+              {currentStack.length === 0 && (
+                <div className="col-span-full p-6 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center text-sm text-slate-400 font-bold">
+                  Add skills from Settings to build your profile.
+                </div>
+              )}
             </div>
           </div>
 
@@ -208,20 +293,61 @@ const ProfilePage = () => {
               <p className="text-sm font-medium text-slate-400">Verified project involvements</p>
             </div>
 
-            <div className="space-y-4">
-              {mockProfile.contributions.map((project) => (
-                <ContributionCard 
-                  key={project.name}
-                  name={project.name}
-                  role={project.role}
-                  tag={project.tag}
-                  icon={project.icon}
-                />
-              ))}
+            <div className="p-8 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 text-center">
+              <p className="text-sm font-bold text-slate-400">No contribution history yet.</p>
             </div>
           </div>
         </div>
       </div>
+
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={closeEditor} />
+          <div className="absolute inset-x-3 top-3 bottom-3 md:inset-x-auto md:left-1/2 md:top-8 md:bottom-8 md:w-[760px] md:-translate-x-1/2 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-slate-100 dark:border-zinc-800">
+              <h3 className="text-lg md:text-xl font-black">Edit Profile</h3>
+              <button
+                onClick={closeEditor}
+                className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-500 flex items-center justify-center"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium" />
+                <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="Username" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium" />
+                <input value={form.profile_title} onChange={(e) => setForm({ ...form, profile_title: e.target.value })} placeholder="Profile title (e.g. Frontend Developer)" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2" />
+                <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Location" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium" />
+                <input value={form.years_of_experience} onChange={(e) => setForm({ ...form, years_of_experience: e.target.value })} placeholder="Years of experience" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium" />
+                <select value={form.experience_level} onChange={(e) => setForm({ ...form, experience_level: e.target.value })} className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2">
+                  <option value="">Experience level</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="expert">Expert</option>
+                </select>
+                <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Bio" rows={4} className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2" />
+                <input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} placeholder="Skills (comma separated, no # tags)" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2" />
+                <input value={form.github_url} onChange={(e) => setForm({ ...form, github_url: e.target.value })} placeholder="GitHub URL" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2" />
+                <input value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} placeholder="LinkedIn URL" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2" />
+                <input value={form.portfolio_url} onChange={(e) => setForm({ ...form, portfolio_url: e.target.value })} placeholder="Portfolio URL" className="rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm font-medium md:col-span-2" />
+              </div>
+            </div>
+
+            <div className="p-4 md:p-6 border-t border-slate-100 dark:border-zinc-800 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+              <button onClick={closeEditor} className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-600 font-black text-sm">
+                Cancel
+              </button>
+              <button onClick={handleSave} disabled={isSaving} className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

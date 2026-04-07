@@ -5,25 +5,28 @@ import {
   Search, 
   Settings2, 
   ArrowUpDown, 
-  Search as SearchIcon
+  Search as SearchIcon,
+  Loader2
 } from "lucide-react";
 import ProjectCard from "./components/ProjectCard";
-import { MOCK_PROJECTS } from "./mockData";
+import { useProjects } from "@/hooks";
 import TopNav from "../components/TopNav";
 
 const ExplorePage = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: projects, isLoading, error } = useProjects();
+
   const categories = [
-    "All", "Web3", "Sustainability", "Productivity", "Health", "Finance", "AI/ML"
+    "All", "Web3", "Sustainability", "Productivity", "Health", "Finance", "AI/ML", "Education", "Gaming"
   ];
 
-  const filteredProjects = MOCK_PROJECTS.filter(project => {
+  const filteredProjects = (projects || []).filter(project => {
     const matchesCategory = activeCategory === "All" || project.category === activeCategory;
     const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.skills_required.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
+                          (project.description?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+                          (project.skills_required || []).some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
 
@@ -91,7 +94,17 @@ const ExplorePage = () => {
       </section>
 
       {/* Projects Grid */}
-      {filteredProjects.length > 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Loader2 className="animate-spin text-blue-primary mb-4" size={48} />
+          <p className="text-slate-500 font-bold">Discovering projects...</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <h2 className="text-2xl font-extrabold text-red-500 mb-2">Error loading projects</h2>
+          <p className="text-slate-500 font-bold">Something went wrong. Please try again later.</p>
+        </div>
+      ) : filteredProjects.length > 0 ? (
         <section className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8 pb-20">
           {filteredProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />

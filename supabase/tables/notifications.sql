@@ -10,6 +10,9 @@ create table if not exists notifications (
   type notification_type,
   message text not null,
   read boolean default false,
+  link text,
+  sender_id uuid references next_auth.users(id) on delete set null,
+  metadata jsonb default '{}'::jsonb,
   created_at timestamp with time zone default now()
 );
 

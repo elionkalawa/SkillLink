@@ -22,6 +22,7 @@ export async function POST(req: Request) {
 
     // Check if user already exists
     const { data: existingUser } = await supabase
+      .schema("next_auth")
       .from("users")
       .select("email")
       .eq("email", email)
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
     }
 
     const { data: existingUsername } = await supabase
+      .schema("next_auth")
       .from("users")
       .select("username")
       .eq("username", username)
@@ -52,6 +54,7 @@ export async function POST(req: Request) {
 
     // Ensure we generate an ID like next-auth does (UUID usually)
     const { data: user, error } = await supabase
+      .schema("next_auth")
       .from("users")
       .insert({
         name,

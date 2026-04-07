@@ -21,6 +21,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const { data: user, error } = await supabase
+          .schema("next_auth")
           .from("users")
           .select()
           .eq("email", credentials.email)
@@ -47,6 +48,8 @@ export const authOptions: NextAuthOptions = {
   adapter: SupabaseAdapter({
     url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
     secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    // @ts-expect-error - schema is supported but might be missing in types
+    schema: "next_auth",
   }) as import("next-auth/adapters").Adapter,
   session: { strategy: "jwt" },
   callbacks: {

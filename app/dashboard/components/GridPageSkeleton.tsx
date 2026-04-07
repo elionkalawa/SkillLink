@@ -27,7 +27,7 @@ const GridPageSkeleton = () => {
         {/* Categories Strip Skeleton */}
         <div className="mt-8 flex items-center gap-3 overflow-x-auto pb-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-             <Skeleton key={i} className="h-11 w-32 rounded-xl flex-shrink-0" />
+             <Skeleton key={i} className="h-11 w-32 rounded-xl shrink-0" />
           ))}
         </div>
       </section>

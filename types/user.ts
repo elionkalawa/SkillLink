@@ -7,6 +7,14 @@ export interface User {
   username: string | null;
   bio: string | null;
   skills: string[];
+  github_url?: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  location?: string;
+  years_of_experience?: number;
+  experience_level?: "beginner" | "intermediate" | "advanced" | "expert" | string;
+  profile_title?: string;
+  role?: string;
   created_at: string;
 }
 

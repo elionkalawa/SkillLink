@@ -15,6 +15,9 @@ export interface Project {
   status: ProjectStatus;
   created_at: string;
   deadline?: string;
+  image_url?: string;
+  full_description?: string;
+  workspaces?: { id: string }[];
   host_name?: string;
   host_image?: string;
   host_verified?: boolean;

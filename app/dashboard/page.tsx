@@ -12,16 +12,22 @@ import React from "react";
 import StatsCards from "./components/StatsCards";
 import WorkspaceListCard from "./components/WorkspaceListCard";
 import TopNav from "./components/TopNav";
-import { useUser } from "@/hooks";
+import { useUser, useUserProjects, useProjects } from "@/hooks";
+import { Project } from "@/types";
 
 const DashboardPage = () => {
   const { user } = useUser();
+  const { data: userProjects } = useUserProjects();
+  const { data: allProjects } = useProjects();
 
   if (!user) return <div className="p-10 flex flex-col items-center justify-center min-h-[50vh] text-center">
     <h2 className="text-2xl font-bold mb-2">Not logged in</h2>
     <p className="text-slate-500 mb-6 font-medium">Please log in to view the dashboard.</p>
     <Link href="/login" className="px-6 py-3 bg-blue-primary text-white rounded-xl font-bold">Log in now</Link>
   </div>;
+
+  const activeCount = userProjects?.length || 0;
+  const matchesCount = allProjects?.filter((p: Project) => !userProjects?.some((up: Project) => up.id === p.id)).length || 0;
 
   return (
     <div className="w-full py-4">
@@ -32,7 +38,9 @@ const DashboardPage = () => {
             How&apos;s it going, {user?.name?.split(" ")[0] || 'there'}? 👋
           </h1>
           <p className="text-md text-slate-400 font-bold">
-            You have 2 projects reaching milestones this week.
+            {activeCount > 0 
+              ? `You have ${activeCount} active projects in your workspace.` 
+              : "Ready to start something new today?"}
           </p>
         </div>
         <TopNav />
@@ -43,25 +51,25 @@ const DashboardPage = () => {
           icon={<TrendingUp size={22} />}
           iconsize="text-5xl"
           title="Active Projects"
-          stats="02"
+          stats={activeCount.toString().padStart(2, '0')}
         />
         <StatsCards
           icon={<History size={22} />}
           iconsize="text-5xl"
           title="Applications"
-          stats="2"
+          stats="02"
         />
         <StatsCards
           icon={<Trophy size={22} />}
           iconsize="text-5xl"
           title="Shipped"
-          stats="12"
+          stats="00"
         />
         <StatsCards
           icon={<Sparkles size={22} />}
           iconsize="text-5xl"
-          title="XP Points"
-          stats="4.2k"
+          title="Matches"
+          stats={matchesCount.toString()}
         />
       </section>
 

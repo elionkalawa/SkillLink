@@ -1,101 +1,168 @@
 "use client";
 
-import React from "react";
-import { Clock, Box } from "lucide-react";
+import React, { useState } from "react";
+import { 
+  Box, 
+  MoreVertical, 
+  Pencil, 
+  Trash2, 
+  ChevronRight, 
+  Loader2
+} from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { useDeleteProject } from "@/hooks/useProjects";
+import { toast } from "sonner";
 
 interface ActiveProjectCardProps {
   id: string;
   title: string;
-  role: string;
-  startedAt: string;
-  nextMilestone: {
-    name: string;
-    dueIn: string;
-  };
-  tasks: {
+  description: string;
+  tags: string[];
+  status: string;
+  workspaceId?: string;
+  role?: string;
+  image_url?: string;
+  tasks?: {
     pending: number;
     total: number;
-  };
-  recentActivity: {
-    count: number;
-    context: string;
   };
 }
 
 const ActiveProjectCard: React.FC<ActiveProjectCardProps> = ({
   id,
   title,
+  description,
+  tags,
+  status,
+  workspaceId,
   role,
-  startedAt,
-  nextMilestone,
+  image_url,
   tasks,
-  recentActivity,
 }) => {
-  const taskProgress = tasks.total > 0 ? (tasks.total - tasks.pending) / tasks.total * 100 : 0;
+  const [showMenu, setShowMenu] = useState(false);
+  const { mutateAsync: deleteProject, isPending: isDeleting } = useDeleteProject();
+
+  const taskProgress = tasks && tasks.total > 0 ? (tasks.total - tasks.pending) / tasks.total * 100 : 0;
+
+  const handleDelete = async () => {
+    if (confirm("Are you sure you want to delete this project? This will also remove the associated workspace and chat.")) {
+      try {
+        await deleteProject(id);
+        toast.success("Project deleted successfully");
+      } catch (err) {
+        toast.error("Failed to delete project");
+        console.error(err);
+      }
+    }
+  };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-8 md:p-10 border border-slate-50 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col md:flex-row items-center gap-10 transition-all hover:shadow-indigo-200/20 dark:hover:shadow-indigo-900/10 duration-500 group">
-      {/* Icon/Logo Section */}
-      <div className="w-24 h-24 rounded-[32px] bg-indigo-950 flex flex-shrink-0 items-center justify-center text-white text-4xl font-black shadow-inner shadow-black/20 group-hover:scale-105 transition-transform duration-500">
-         {title.charAt(0)}
+    <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 md:p-8 border border-slate-100 dark:border-zinc-800 shadow-xl shadow-slate-200/40 dark:shadow-none flex flex-col items-start gap-6 transition-all hover:shadow-indigo-200/30 dark:hover:shadow-indigo-900/10 duration-500 group relative">
+      
+      {/* Top Section */}
+      <div className="flex items-start justify-between w-full">
+        <div className="flex items-center gap-5 flex-1 min-w-0">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-950 flex shrink-0 items-center justify-center text-white text-2xl font-black shadow-inner shadow-black/20 group-hover:scale-105 transition-transform duration-500 overflow-hidden">
+             {image_url ? (
+               <Image src={image_url} alt={title} width={64} height={64} className="w-full h-full object-cover" />
+             ) : (
+               title.charAt(0)
+             )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight truncate group-hover:text-indigo-600 transition-colors">{title}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wider">
+                {status}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400">
+                {role || "Project Owner"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Menu */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors text-slate-400"
+          >
+            <MoreVertical size={20} />
+          </button>
+          
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl shadow-2xl p-2 z-20 animate-in fade-in zoom-in-95 duration-200">
+                <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-600 dark:text-slate-300 font-bold text-sm transition-colors">
+                  <Pencil size={16} /> Edit Details
+                </button>
+                <button 
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold text-sm transition-colors disabled:opacity-50"
+                >
+                  {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                  Delete Project
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Main Content Info */}
-      <div className="flex-1 w-full space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-           <div>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">{title}</h2>
-              <p className="text-sm font-bold text-slate-400 dark:text-zinc-500 mt-1">
-                 Role: <span className="text-indigo-600 dark:text-indigo-400">{role}</span> 
-                 <span className="mx-2 opacity-50">•</span> 
-                 Started {startedAt}
-              </p>
-           </div>
+      <div className="space-y-4 w-full">
+        <p className="text-sm text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed font-medium">
+          {description}
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          {tags?.slice(0, 3).map(tag => (
+            <span key={tag} className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-100/50 dark:border-zinc-700/50 uppercase tracking-tight">
+              #{tag}
+            </span>
+          ))}
+          {tags?.length > 3 && <span className="text-[10px] font-bold text-slate-400 px-1">+{tags.length - 3}</span>}
         </div>
+      </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-           {/* Section: Next Milestone */}
-           <div className="bg-slate-50 dark:bg-zinc-800/40 p-5 rounded-3xl border border-white dark:border-zinc-800 shadow-sm shadow-slate-100 dark:shadow-none">
-              <span className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 tracking-widest mb-1 block">Next Milestone</span>
-              <h4 className="font-extrabold text-slate-800 dark:text-zinc-100 text-sm">{nextMilestone.name}</h4>
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-zinc-400 mt-2">
-                 <Clock size={12} className="text-indigo-500" />
-                 <span>Due in {nextMilestone.dueIn}</span>
-              </div>
-           </div>
-
-           {/* Section: Your Tasks */}
-           <div className="bg-slate-50 dark:bg-zinc-800/50 p-5 rounded-3xl border border-white dark:border-zinc-800 shadow-sm shadow-slate-100 dark:shadow-none">
-              <span className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 tracking-widest mb-1 block">Your Tasks</span>
-              <h4 className="font-extrabold text-slate-800 dark:text-zinc-100 text-sm">{tasks.pending} Pending</h4>
-              <div className="w-full h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full mt-3 overflow-hidden">
-                 <div 
-                   className="h-full bg-indigo-500/80 rounded-full" 
-                   style={{ width: `${taskProgress}%` }}
-                 />
-              </div>
-           </div>
-
-           {/* Section: Recent Activity */}
-           <div className="bg-slate-50 dark:bg-zinc-800/50 p-5 rounded-3xl border border-white dark:border-zinc-800 shadow-sm shadow-slate-100 dark:shadow-none">
-              <span className="text-[10px] font-black uppercase text-slate-400 dark:text-zinc-500 tracking-widest mb-1 block">Recent Activity</span>
-              <h4 className="font-extrabold text-slate-800 dark:text-zinc-100 text-sm">{recentActivity.count} new comments</h4>
-              <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mt-2">{recentActivity.context}</p>
-           </div>
+      {/* Progress / Stats */}
+      {tasks && (
+        <div className="w-full space-y-2">
+          <div className="flex items-center justify-between text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">
+            <span>Project Progress</span>
+            <span>{Math.round(taskProgress)}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-indigo-600 rounded-full transition-all duration-1000 ease-out" 
+              style={{ width: `${taskProgress}%` }}
+            />
+          </div>
         </div>
+      )}
 
-        {/* Footer Actions */}
-        <div className="flex items-center gap-4 pt-4">
-           <Link href={`/dashboard/projects/${id}`} className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 group/btn">
-              <Box size={18} className="group-hover/btn:scale-110 transition-transform" />
-              <span>Open Workspace</span>
+      {/* Footer Actions */}
+      <div className="w-full pt-2">
+         {workspaceId ? (
+           <Link 
+             href={`/dashboard/workspaces/${workspaceId}`} 
+             className="flex items-center justify-between w-full px-5 py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 dark:shadow-none active:scale-[0.98] group/btn overflow-hidden relative"
+           >
+             <div className="flex items-center gap-3 relative z-10">
+               <Box size={20} className="group-hover/btn:rotate-12 transition-transform" />
+               <span>Enter Workspace Hub</span>
+             </div>
+             <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform relative z-10" />
+             <div className="absolute inset-0 bg-white/10 translate-y-full group-hover/btn:translate-y-0 transition-transform duration-300" />
            </Link>
-           <button className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-extrabold text-sm hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all shadow-sm active:scale-95">
-              <span>View Repository</span>
+         ) : (
+           <button className="flex items-center justify-center w-full px-5 py-4 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 font-black text-sm cursor-not-allowed">
+              Setting up workspace...
            </button>
-        </div>
+         )}
       </div>
     </div>
   );

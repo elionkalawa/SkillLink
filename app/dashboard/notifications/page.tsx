@@ -3,8 +3,22 @@
 import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { supabase } from "@/lib/supabaseClient";
-import { Bell, CheckCircle, Info, MessageCircle, Briefcase, Trash2, Loader2 } from "lucide-react";
+import { 
+  Bell, 
+  CheckCircle, 
+  Info, 
+  MessageCircle, 
+  Briefcase, 
+  Trash2, 
+  Loader2, 
+  Check, 
+  X, 
+  UserCircle 
+} from "lucide-react";
+import Link from "next/link";
 import TopNav from "../components/TopNav";
+import { useUpdateMemberStatus } from "@/hooks/useProjects";
+import { toast } from "sonner";
 
 export interface Notification {
   id: string;
@@ -12,13 +26,22 @@ export interface Notification {
   type: 'invite' | 'approval' | 'message' | 'project-update';
   message: string;
   read: boolean;
+  link?: string;
   created_at: string;
+  metadata?: {
+    projectId: string;
+    applicantId: string;
+    memberId: string;
+    type: string;
+  };
 }
 
 export default function NotificationsPage() {
   const { data: session, status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isFetching, setIsFetching] = useState(true);
+  const { mutateAsync: updateStatus } = useUpdateMemberStatus();
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const isLoading = status === 'loading' || (status === 'authenticated' && isFetching);
 
@@ -78,15 +101,36 @@ export default function NotificationsPage() {
 
   const markAsRead = async (id: string, currentRead: boolean) => {
     if (currentRead) return;
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
     await supabase.from('notifications').update({ read: true }).eq('id', id);
   };
 
+  const handleAction = async (notification: Notification, status: 'approved' | 'rejected') => {
+    if (!notification.metadata) return;
+    
+    setProcessingId(notification.id);
+    try {
+      await updateStatus({
+        projectId: notification.metadata.projectId,
+        memberId: notification.metadata.memberId,
+        status
+      });
+      toast.success(`Application ${status === 'approved' ? 'approved' : 'rejected'}`);
+      // Mark notification as read and hide actions
+      await markAsRead(notification.id, false);
+      // Remove metadata to hide buttons after action
+      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, metadata: undefined } : n));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Action failed";
+      toast.error(message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const deleteNotification = async (id: string) => {
-    // Optimistic update
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     await supabase.from('notifications').delete().eq('id', id);
   };
@@ -132,84 +176,93 @@ export default function NotificationsPage() {
             Notifications
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium">
-            Stay updated with your latest alerts and messages.
+            Manage your project requests and team updates.
           </p>
         </div>
         
-        <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-end gap-4 h-full">
+        <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-end gap-4">
           <TopNav />
           {notifications.length > 0 && (
             <button 
               onClick={clearAllAppNotifications}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-xl transition-colors w-fit"
+              className="px-4 py-2 text-sm font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 rounded-xl transition-colors"
             >
-              <Trash2 size={16} />
-              <span>Clear All</span>
+              Clear All
             </button>
           )}
         </div>
       </div>
 
-      {notifications.length === 0 ? (
-        <div className="bg-white dark:bg-zinc-900/50 rounded-[32px] p-12 text-center border border-slate-100 dark:border-zinc-800 shadow-sm">
-          <div className="w-20 h-20 bg-slate-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-400">
-            <Bell size={32} />
+      <div className="space-y-4">
+        {notifications.length === 0 ? (
+          <div className="bg-white dark:bg-zinc-900/50 rounded-[32px] p-12 text-center border border-slate-100 dark:border-zinc-800">
+            <Bell className="mx-auto text-slate-300 mb-4" size={48} />
+            <h3 className="text-xl font-bold">All caught up!</h3>
           </div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No notifications yet</h3>
-          <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium">
-            When you receive invites, approvals, or messages, they will appear here. They update in real-time!
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {notifications.map((notification) => (
+        ) : (
+          notifications.map((notification) => (
             <div
               key={notification.id}
-              onClick={() => markAsRead(notification.id, notification.read)}
-              className={`group flex items-start gap-4 p-6 rounded-[24px] border transition-all cursor-pointer ${
+              className={`group relative flex flex-col p-6 rounded-[32px] border transition-all ${
                 notification.read
-                  ? 'bg-white dark:bg-zinc-900/50 border-slate-100 dark:border-zinc-800 shadow-sm hover:border-slate-200 dark:hover:border-zinc-700'
-                  : 'bg-indigo-50/50 dark:bg-indigo-500/10 border-indigo-100 dark:border-indigo-500/20 shadow-md ring-1 ring-indigo-500/10'
+                  ? 'bg-white dark:bg-zinc-900/50 border-slate-100 dark:border-zinc-800 opacity-80'
+                  : 'bg-white dark:bg-zinc-900 border-indigo-100 dark:border-indigo-500/30 shadow-xl shadow-indigo-100/20 dark:shadow-none'
               }`}
             >
-              <div className={`p-3 rounded-2xl ${notification.read ? 'bg-slate-50 dark:bg-zinc-800/80 shadow-inner' : 'bg-white dark:bg-zinc-800 shadow-sm'}`}>
-                {getIconForType(notification.type)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className={`text-base leading-relaxed ${notification.read ? 'text-slate-600 dark:text-slate-300 font-medium' : 'text-slate-900 dark:text-white font-bold'}`}>
-                  {notification.message}
-                </p>
-                <div className="flex items-center gap-4 mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                  <span>
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-2xl ${notification.read ? 'bg-slate-50 dark:bg-zinc-800' : 'bg-indigo-50 dark:bg-indigo-500/10 shadow-inner'}`}>
+                  {getIconForType(notification.type)}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <p className={`text-base leading-relaxed ${notification.read ? 'text-slate-500' : 'text-slate-900 dark:text-white font-bold'}`}>
+                    {notification.message}
+                  </p>
+                  <p className="text-xs font-bold text-slate-400 mt-2">
                     {formatDate(notification.created_at)}
-                  </span>
-                  {!notification.read && (
-                    <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-500/20 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400 shadow-[0_0_8px_rgba(79,70,229,0.5)]"></span>
-                      New
-                    </span>
+                  </p>
+
+                  {/* Action Buttons for Join Requests */}
+                  {notification.metadata?.type === 'join-request' && (
+                    <div className="flex flex-wrap items-center gap-3 mt-5">
+                       <Link 
+                         href={`/dashboard/profile/${notification.metadata.applicantId}`}
+                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 text-sm font-black border border-slate-100 dark:border-zinc-700 hover:bg-slate-100 transition-all"
+                       >
+                         <UserCircle size={16} />
+                         View Profile
+                       </Link>
+                       <button 
+                         onClick={() => handleAction(notification, 'approved')}
+                         disabled={!!processingId}
+                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 dark:shadow-none disable:opacity-50"
+                       >
+                         {processingId === notification.id ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                         Approve
+                       </button>
+                       <button 
+                         onClick={() => handleAction(notification, 'rejected')}
+                         disabled={!!processingId}
+                         className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 text-rose-600 text-sm font-black hover:bg-rose-100 transition-all"
+                       >
+                         <X size={16} />
+                         Reject
+                       </button>
+                    </div>
                   )}
                 </div>
-              </div>
 
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(notification.id);
-                  }}
-                  className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-colors focus:ring-2 focus:ring-rose-500/20 outline-none"
-                  aria-label="Delete notification"
-                  title="Delete"
+                  onClick={() => deleteNotification(notification.id)}
+                  className="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-rose-500 transition-all"
                 >
                   <Trash2 size={18} />
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

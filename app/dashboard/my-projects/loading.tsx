@@ -16,13 +16,13 @@ const MyProjectsLoading = () => {
       {/* Tabs Skeleton */}
       <div className="flex border-b border-slate-100 dark:border-zinc-800 gap-8 mb-10 overflow-x-auto pb-4">
         {[1, 2, 3].map((i) => (
-           <Skeleton key={i} className="h-8 w-32 rounded-lg flex-shrink-0" />
+           <Skeleton key={i} className="h-8 w-32 rounded-lg shrink-0" />
         ))}
       </div>
 
       {/* Active Project Card Skeleton */}
       <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-8 md:p-10 border border-slate-50 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 flex flex-col md:flex-row items-center gap-10">
-        <Skeleton className="w-24 h-24 rounded-[32px] flex-shrink-0" />
+        <Skeleton className="w-24 h-24 rounded-[32px] shrink-0" />
         <div className="flex-1 w-full space-y-8">
            <div className="space-y-3">
               <Skeleton className="h-8 w-64 rounded-xl" />

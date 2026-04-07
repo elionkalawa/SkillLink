@@ -123,7 +123,7 @@ const MessagesPage = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] w-full max-w-[1400px] mx-auto p-4 md:p-8 pt-4 md:pt-6 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      <div className="flex justify-between items-center w-full hidden md:flex">
+      <div className="justify-between items-center w-full hidden md:flex">
         <div>
           <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             Messages

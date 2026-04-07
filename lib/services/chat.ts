@@ -22,9 +22,17 @@ export const chatService = {
       .eq("user_id", userId);
 
     if (error) throw error;
-    return data.map((d: any) => d.chats) as Chat[];
+
+    return data.map(
+      (d: { chat_id: string; chats: Omit<Chat, "participants" | "messages"> | Omit<Chat, "participants" | "messages">[] }) => {
+        // Supabase may return the joined relation as an array or single object
+        const chat = Array.isArray(d.chats) ? d.chats[0] : d.chats;
+        return chat as Chat;
+      }
+    );
   },
 
+  
   /**
    * Fetches messages for a specific chat
    */

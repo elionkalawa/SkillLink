@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext } from "react";
-import { UserContext } from "@/context/UserContext";
+import { UserContext } from "@/providers/UserProvider";
 
 export const useUser = () => {
     const context = useContext(UserContext);
