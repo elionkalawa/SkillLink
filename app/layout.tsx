@@ -1,32 +1,38 @@
-"use client";
-
-import { useEffect } from "react";
+import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/providers/Providers";
+import { ThemeBootstrap } from "@/components/ThemeBootstrap";
+
+export const metadata: Metadata = {
+  title: {
+    default: "SkillLink",
+    template: "%s | SkillLink",
+  },
+  description:
+    "SkillLink — Connect with talented collaborators and build projects together.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  openGraph: {
+    title: "SkillLink",
+    description: "Connect with talented collaborators and build projects together.",
+    type: "website",
+  },
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  useEffect(() => {
-    // Sync initial theme on mount (server-side safe)
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme");
-      const systemDark = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-      ).matches;
-      const isDark = saved === "dark" || (!saved && systemDark);
-
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-      }
-    }
-  }, []);
-
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={`antialiased`}>
+      <body className="antialiased">
+        <ThemeBootstrap />
         <Providers>{children}</Providers>
       </body>
     </html>
