@@ -19,7 +19,37 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    // For join-request notifications, enrich metadata with the live member status
+    // This ensures the UI always reflects the true DB state, even if the metadata
+    // update in the status route failed silently.
+    const enriched = await Promise.all(
+      (data ?? []).map(async (notification) => {
+        const meta = notification.metadata as Record<string, string> | null;
+        if (meta?.type === 'join-request' && meta?.memberId) {
+          // Metadata already has a resolved status, no need to re-fetch
+          if (meta.status === 'approved' || meta.status === 'rejected') {
+            return notification;
+          }
+
+          // Fetch the actual member status from the source of truth
+          const { data: member } = await supabase
+            .from('project_members')
+            .select('status')
+            .eq('id', meta.memberId)
+            .single();
+
+          if (member && (member.status === 'approved' || member.status === 'rejected')) {
+            return {
+              ...notification,
+              metadata: { ...meta, status: member.status },
+            };
+          }
+        }
+        return notification;
+      })
+    );
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error("Notifications GET Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

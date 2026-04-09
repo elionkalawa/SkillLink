@@ -110,24 +110,32 @@ export async function POST(
     // 5. Update the original notification if notificationId is provided
     if (notificationId) {
       // First, get the current metadata to merge
-      const { data: nData } = await supabase
+      const { data: nData, error: nFetchError } = await supabase
         .from("notifications")
         .select("metadata")
         .eq("id", notificationId)
         .single();
-      
-      const updatedMetadata = {
-        ...( (nData?.metadata as object) || {}),
-        status: status
-      };
 
-      await supabase
-        .from("notifications")
-        .update({ 
-          metadata: updatedMetadata,
-          read: true // Consider handled notifications as read
-        })
-        .eq("id", notificationId);
+      if (nFetchError || !nData) {
+        console.error("Could not fetch notification for metadata update:", nFetchError);
+      } else {
+        const updatedMetadata = {
+          ...((nData?.metadata as object) || {}),
+          status: status,
+        };
+
+        const { error: nUpdateError } = await supabase
+          .from("notifications")
+          .update({
+            metadata: updatedMetadata,
+            read: true,
+          })
+          .eq("id", notificationId);
+
+        if (nUpdateError) {
+          console.error("Failed to update notification metadata with status:", nUpdateError);
+        }
+      }
     }
 
     return NextResponse.json({ success: true, status });
