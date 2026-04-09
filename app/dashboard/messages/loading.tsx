@@ -3,9 +3,9 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 const MessagesLoading = () => {
   return (
-    <div className="flex h-[calc(100vh-100px)] w-full max-w-[1400px] mx-auto p-4 md:p-8 gap-6 animate-pulse">
+    <div className="flex h-[calc(100dvh-84px)] md:h-[calc(100vh-100px)] w-full max-w-[1400px] mx-auto p-2 sm:p-3 md:p-8 gap-3 md:gap-6 animate-pulse">
       {/* Sidebar Skeleton */}
-      <div className="hidden md:flex w-[380px] h-full flex-col bg-white dark:bg-zinc-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 border border-slate-100 dark:border-zinc-800 overflow-hidden">
+      <div className="hidden md:flex w-[360px] lg:w-[380px] h-full flex-col bg-white dark:bg-zinc-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 border border-slate-100 dark:border-zinc-800 overflow-hidden">
         <div className="p-6 pb-2">
           <div className="flex justify-between items-center mb-10 mt-2">
             <Skeleton className="h-8 w-32 rounded-xl" />

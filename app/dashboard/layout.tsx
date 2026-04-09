@@ -202,7 +202,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </button>
           </header>
 
-          <main className="flex-1 overflow-y-auto bg-transparent p-6 md:p-10">
+          <main className="flex-1 overflow-y-auto bg-transparent p-4 sm:p-5 md:p-8 lg:p-10">
             <div className="">{children}</div>
           </main>
         </div>

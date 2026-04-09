@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id: projectId, memberId } = await params;
     const user = await getCurrentUser();
-    const { status } = await request.json(); // 'approved' or 'rejected'
+    const { status, notificationId } = await request.json(); // 'approved', 'rejected' and optional notificationId
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -22,7 +22,7 @@ export async function POST(
     // 1. Verify user is owner of the project
     const { data: project, error: projectError } = await supabase
       .from("projects")
-      .select("owner_id, title, chat_id")
+      .select("owner_id, title")
       .eq("id", projectId)
       .single();
 
@@ -39,7 +39,7 @@ export async function POST(
       .from("project_members")
       .update({ status })
       .eq("id", memberId)
-      .select("user_id")
+      .select("user_id, project_role_id")
       .single();
 
     if (memberError || !member) {
@@ -80,6 +80,54 @@ export async function POST(
              user_id: member.user_id
            });
        }
+
+       // Handle Role Vacancies if applicable
+       if (member.project_role_id) {
+         // Count approved members for this role
+         const { count: approvedCount } = await supabase
+           .from("project_members")
+           .select("id", { count: 'exact', head: true })
+           .eq("project_role_id", member.project_role_id)
+           .eq("status", "approved");
+           
+         // Get role vacancy size
+         const { data: role } = await supabase
+           .from("project_roles")
+           .select("vacancies")
+           .eq("id", member.project_role_id)
+           .single();
+           
+         if (role && (approvedCount || 0) >= role.vacancies) {
+           // Close the role
+           await supabase
+             .from("project_roles")
+             .update({ is_open: false })
+             .eq("id", member.project_role_id);
+         }
+       }
+    }
+
+    // 5. Update the original notification if notificationId is provided
+    if (notificationId) {
+      // First, get the current metadata to merge
+      const { data: nData } = await supabase
+        .from("notifications")
+        .select("metadata")
+        .eq("id", notificationId)
+        .single();
+      
+      const updatedMetadata = {
+        ...( (nData?.metadata as object) || {}),
+        status: status
+      };
+
+      await supabase
+        .from("notifications")
+        .update({ 
+          metadata: updatedMetadata,
+          read: true // Consider handled notifications as read
+        })
+        .eq("id", notificationId);
     }
 
     return NextResponse.json({ success: true, status });

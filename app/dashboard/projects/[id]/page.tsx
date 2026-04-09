@@ -19,10 +19,13 @@ import { useQuery } from "@tanstack/react-query";
 import TopNav from "../../components/TopNav";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Project } from "@/types";
+import { Project, ProjectRole } from "@/types";
 import { projectService } from "@/lib/services/project";
+import { useUser } from "@/hooks/useUser";
+import EditProjectModal from "./components/EditProjectModal";
 
 interface ExtendedProject extends Project {
+  roles?: ProjectRole[];
   owner: {
     id: string;
     name: string;
@@ -31,6 +34,13 @@ interface ExtendedProject extends Project {
     role: string;
     location: string;
   };
+  membership?: {
+    status: string;
+    role: string;
+  } | null;
+  workspace?: {
+    id: string;
+  } | null;
 }
 
 export default function ProjectDetailPage() {
@@ -38,6 +48,9 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const { mutateAsync: joinProject, isPending: isJoining } = useJoinProject();
   const [hasApplied, setHasApplied] = useState(false);
+  const [appliedRoles, setAppliedRoles] = useState<string[]>([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { user } = useUser();
 
   const { data: project, isLoading } = useQuery({
     queryKey: ["projects", id],
@@ -47,10 +60,11 @@ export default function ProjectDetailPage() {
     },
   });
 
-  const handleApply = async () => {
+  const handleApply = async (roleId?: string) => {
     try {
-      await joinProject(id);
+      await joinProject({ projectId: id, roleId });
       setHasApplied(true);
+      if (roleId) setAppliedRoles([...appliedRoles, roleId]);
       toast.success("Application sent successfully!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to apply";
@@ -95,6 +109,14 @@ export default function ProjectDetailPage() {
             <ChevronLeft size={24} />
           </button>
           <div className="flex items-center gap-4">
+            {user && project.owner_id === user.id && (
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all"
+              >
+                Edit Project
+              </button>
+            )}
             <button className="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-900 font-bold text-sm text-slate-500 hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200">
               <Share2 size={16} /> Share
             </button>
@@ -170,6 +192,45 @@ export default function ProjectDetailPage() {
                   ))}
                 </div>
               </div>
+
+              {/* project roles section */}
+              {project.roles && project.roles.length > 0 && (
+                <div className="space-y-6 pt-10 mt-10 border-t border-slate-100 dark:border-zinc-800">
+                  <h3 className="text-xl font-black flex items-center gap-2">
+                    <Users className="text-indigo-500" size={20} /> Open Roles ({project.roles.filter(r => r.is_open).length})
+                  </h3>
+                  <div className="grid gap-4">
+                    {project.roles.map((role) => (
+                      <div key={role.id} className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-black text-lg text-slate-900 dark:text-white">{role.title}</h4>
+                            {!role.is_open && (
+                              <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 text-[10px] font-black uppercase tracking-widest">Filled</span>
+                            )}
+                          </div>
+                          {role.description && <p className="text-slate-500 dark:text-zinc-400 text-sm font-medium">{role.description}</p>}
+                          {role.skills_required && role.skills_required.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {role.skills_required.map((s: string) => (
+                                <span key={s} className="text-[10px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-500/20">{s}</span>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-xs font-bold text-slate-400">Total Vacancies: {role.vacancies}</p>
+                        </div>
+                        <button
+                          onClick={() => handleApply(role.id)}
+                          disabled={isJoining || appliedRoles.includes(role.id) || !role.is_open}
+                          className="px-6 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed transition-all shrink-0 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-indigo-200 dark:shadow-none min-w-[140px]"
+                        >
+                          {appliedRoles.includes(role.id) ? "Applied" : !role.is_open ? "Filled" : "Apply for Role"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -215,7 +276,26 @@ export default function ProjectDetailPage() {
                 </div>
 
                 <div className="space-y-4 pt-4">
-                  {hasApplied ? (
+                  {user && (project.owner_id === user.id || project.membership?.status === 'approved') ? (
+                    <button
+                      onClick={() => {
+                        const workspaceId = project.workspace?.id;
+                        if (workspaceId) {
+                          router.push(`/dashboard/workspaces/${workspaceId}`);
+                        } else {
+                          toast.error("Workspace still initializing...");
+                        }
+                      }}
+                      className="w-full py-5 rounded-3xl bg-indigo-600 text-white font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 dark:shadow-none active:scale-[0.98] flex items-center justify-center gap-3 group/btn relative overflow-hidden"
+                    >
+                      <Sparkles size={24} className="text-white animate-pulse" />
+                      <span>View Workspace</span>
+                      <ArrowRight
+                        className="group-hover/btn:translate-x-2 transition-transform"
+                        size={24}
+                      />
+                    </button>
+                  ) : hasApplied || project.membership?.status === 'pending' ? (
                     <div className="w-full flex flex-col items-center justify-center p-8 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400 text-center space-y-2">
                       <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center mb-2">
                         <CheckCircle2 size={32} />
@@ -227,15 +307,15 @@ export default function ProjectDetailPage() {
                     </div>
                   ) : (
                     <button
-                      onClick={handleApply}
+                      onClick={() => handleApply()}
                       disabled={isJoining}
-                      className="w-full py-5 rounded-3xl bg-indigo-600 text-white font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 dark:shadow-none active:scale-[0.98] flex items-center justify-center gap-3 group/btn relative overflow-hidden disabled:opacity-50"
+                      className="w-full py-5 rounded-3xl bg-indigo-600 text-white font-black text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 dark:shadow-none active:scale-[0.98] flex items-center justify-center gap-3 group/btn relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isJoining ? (
                         <Loader2 className="animate-spin" size={24} />
                       ) : (
                         <>
-                          <span>Apply to Join Team</span>
+                          <span>{project.roles && project.roles.length > 0 ? "Apply as General Member" : "Apply to Join Team"}</span>
                           <ArrowRight
                             className="group-hover/btn:translate-x-2 transition-transform"
                             size={24}
@@ -284,6 +364,13 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+      
+      {isEditModalOpen && (
+        <EditProjectModal 
+          project={project} 
+          onClose={() => setIsEditModalOpen(false)} 
+        />
+      )}
     </div>
   );
 }

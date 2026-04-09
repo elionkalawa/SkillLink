@@ -3,6 +3,14 @@ import { workspaceService } from "@/lib/services/workspace";
 import { Workspace } from "@/types";
 
 export const getWorkspaceKey = (id: string) => ["workspaces", id];
+export const listWorkspacesKey = ["workspaces"];
+
+export function useWorkspaces() {
+  return useQuery({
+    queryKey: listWorkspacesKey,
+    queryFn: () => workspaceService.listWorkspaces(),
+  });
+}
 
 export function useWorkspace(id: string) {
   return useQuery({
@@ -20,7 +28,7 @@ export function useUpdateWorkspace() {
       workspaceService.updateWorkspace(id, input),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: getWorkspaceKey(id) });
-      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      queryClient.invalidateQueries({ queryKey: listWorkspacesKey });
     },
   });
 }

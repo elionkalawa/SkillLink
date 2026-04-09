@@ -36,10 +36,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, currentUser, on
   }
 
   return (
-    <div className="flex-1 h-full flex flex-col bg-white dark:bg-zinc-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 border border-slate-100 dark:border-zinc-800 overflow-hidden relative">
+    <div className="flex-1 h-full flex flex-col bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 border border-slate-100 dark:border-zinc-800 overflow-hidden relative">
       {/* Header */}
-      <header className="px-6 py-5 border-b border-slate-50 dark:border-zinc-800/50 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl z-20">
-        <div className="flex items-center gap-4">
+      <header className="px-3 sm:px-4 md:px-6 py-3 md:py-5 border-b border-slate-50 dark:border-zinc-800/50 flex items-center justify-between sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl z-20">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
           {onBack && (
             <button 
               onClick={onBack}
@@ -51,8 +51,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, currentUser, on
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center font-bold text-indigo-500 dark:text-indigo-400 shadow-sm border border-indigo-100/50 dark:border-indigo-500/20">
              {chat.name?.charAt(0)}
           </div>
-          <div>
-            <h2 className="font-bold text-slate-900 dark:text-zinc-100 text-base leading-tight tracking-tight">{chat.name}</h2>
+          <div className="min-w-0">
+            <h2 className="font-bold text-slate-900 dark:text-zinc-100 text-sm sm:text-base leading-tight tracking-tight truncate">{chat.name}</h2>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
               <span className="text-[11px] text-emerald-600 dark:text-emerald-500 font-bold uppercase tracking-wider">Online</span>
@@ -68,7 +68,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, currentUser, on
       </header>
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide bg-slate-50/30 dark:bg-zinc-950/30">
+      <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 scrollbar-hide bg-slate-50/30 dark:bg-zinc-950/30">
         <div className="flex flex-col min-h-full justify-end">
            {messages.map((message) => (
              <MessageBubble 
@@ -81,7 +81,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat, messages, currentUser, on
       </main>
 
       {/* Input */}
-      <footer className="p-6 bg-white dark:bg-zinc-900 border-t border-slate-50 dark:border-zinc-800/50">
+      <footer className="p-3 sm:p-4 md:p-6 bg-white dark:bg-zinc-900 border-t border-slate-50 dark:border-zinc-800/50">
         <div className="flex items-center gap-3 bg-slate-50 dark:bg-zinc-800/50 p-2 rounded-2xl border border-slate-100 dark:border-zinc-800 focus-within:border-indigo-200 dark:focus-within:border-indigo-500/50 focus-within:bg-white dark:focus-within:bg-zinc-800 focus-within:shadow-lg focus-within:shadow-indigo-100/50 dark:focus-within:shadow-indigo-900/10 transition-all duration-300">
           <input
             type="text"

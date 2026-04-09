@@ -45,10 +45,10 @@ export default function PublicProfilePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 py-8 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-5xl mx-auto space-y-8 md:space-y-10 py-6 md:py-8 px-3 sm:px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* Header / Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <button 
           onClick={() => router.back()}
           className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 hover:scale-105 transition-all"
@@ -59,12 +59,12 @@ export default function PublicProfilePage() {
       </div>
 
       {/* Hero Section */}
-      <div className="relative bg-white dark:bg-zinc-900 rounded-[48px] overflow-hidden shadow-2xl shadow-indigo-100/50 dark:shadow-none border border-slate-100 dark:border-zinc-800">
+      <div className="relative bg-white dark:bg-zinc-900 rounded-[28px] md:rounded-[48px] overflow-hidden shadow-2xl shadow-indigo-100/50 dark:shadow-none border border-slate-100 dark:border-zinc-800">
         <div className="h-40 w-full bg-linear-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-90" />
         
-        <div className="px-8 md:px-12 pb-12">
-          <div className="relative flex flex-col md:flex-row md:items-end -mt-20 gap-8">
-            <div className="w-40 h-40 rounded-[40px] border-[6px] border-white dark:border-zinc-900 overflow-hidden bg-slate-100 shadow-2xl relative z-10">
+        <div className="px-4 sm:px-6 md:px-12 pb-8 md:pb-12">
+          <div className="relative flex flex-col md:flex-row md:items-end -mt-16 md:-mt-20 gap-6 md:gap-8">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-[26px] md:rounded-[40px] border-[5px] md:border-[6px] border-white dark:border-zinc-900 overflow-hidden bg-slate-100 shadow-2xl relative z-10">
               {user.image ? (
                 <Image fill src={user.image} alt={user.name} className="object-cover" />
               ) : (
@@ -74,20 +74,20 @@ export default function PublicProfilePage() {
               )}
             </div>
 
-            <div className="flex-1 space-y-2 pb-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white">
+            <div className="flex-1 space-y-2 pb-2 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white wrap-break-word">
                   {user.name}
                 </h1>
                 <span className="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest">
                   Verified Skill
                 </span>
               </div>
-              <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+              <p className="text-base sm:text-lg md:text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
                 <Briefcase size={20} />
                 {user.profile_title || user.role || "Independent Developer"}
               </p>
-              <div className="flex items-center gap-4 text-sm font-bold text-slate-400">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm font-bold text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <MapPin size={16} />
                   {user.location || "Location Private"}
@@ -105,7 +105,7 @@ export default function PublicProfilePage() {
             </div>
 
             <div className="flex gap-3 pb-2">
-               <button className="px-8 py-4 rounded-3xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none active:scale-95 flex items-center gap-2">
+               <button className="w-full sm:w-auto px-5 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-3xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none active:scale-95 flex items-center justify-center gap-2">
                   <Mail size={18} /> Message
                </button>
             </div>

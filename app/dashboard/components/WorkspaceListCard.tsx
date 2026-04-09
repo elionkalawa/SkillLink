@@ -86,7 +86,7 @@ const WorkspaceListCard = ({
           </span>
         </div>
 
-        <Link href={`/dashboard/projects/${id}`} className="w-full md:w-auto">
+        <Link href={`/dashboard/workspaces/${id}`} className="w-full md:w-auto">
           <button className="px-5 py-2 rounded-full border-2 border-gray-100 dark:border-gray-800 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors w-full">
             Open Workspace
           </button>

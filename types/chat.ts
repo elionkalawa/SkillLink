@@ -7,6 +7,7 @@ export interface Chat {
   last_message?: string;
   name?: string;
   is_group: boolean;
+  unread_count?: number;
   participants: ChatParticipant[];
   messages?: Message[];
 }
@@ -26,6 +27,15 @@ export interface Message {
   created_at: string;
   is_read: boolean;
   sender: User;
+}
+
+export interface ChatRecipient {
+  id: string;
+  name: string | null;
+  username: string | null;
+  image: string | null;
+  bio: string | null;
+  skills: string[];
 }
 
 // For use in the Messaging Dashboard views

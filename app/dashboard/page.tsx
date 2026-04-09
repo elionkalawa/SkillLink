@@ -12,19 +12,35 @@ import React from "react";
 import StatsCards from "./components/StatsCards";
 import WorkspaceListCard from "./components/WorkspaceListCard";
 import TopNav from "./components/TopNav";
-import { useUser, useUserProjects, useProjects } from "@/hooks";
-import { Project } from "@/types";
+import { useUser, useUserProjects, useProjects, useDashboardStats } from "@/hooks";
+import { Project, Workspace } from "@/types";
+import DashboardSkeleton from "./components/DashboardSkeleton";
+import { useWorkspaces } from "@/hooks/useWorkspaces";
 
 const DashboardPage = () => {
-  const { user } = useUser();
+  const { user, isLoading } = useUser();
   const { data: userProjects } = useUserProjects();
   const { data: allProjects } = useProjects();
+  const { data: stats } = useDashboardStats();
+  const { data: workspaces } = useWorkspaces();
 
-  if (!user) return <div className="p-10 flex flex-col items-center justify-center min-h-[50vh] text-center">
-    <h2 className="text-2xl font-bold mb-2">Not logged in</h2>
-    <p className="text-slate-500 mb-6 font-medium">Please log in to view the dashboard.</p>
-    <Link href="/login" className="px-6 py-3 bg-blue-primary text-white rounded-xl font-bold">Log in now</Link>
-  </div>;
+  if (isLoading) return <DashboardSkeleton />;
+
+  if (!user)
+    return (
+      <div className="p-10 flex flex-col items-center justify-center min-h-[50vh] text-center">
+        <h2 className="text-2xl font-bold mb-2">Not logged in</h2>
+        <p className="text-slate-500 mb-6 font-medium">
+          Please log in to view the dashboard.
+        </p>
+        <Link
+          href="/login"
+          className="px-6 py-3 bg-blue-primary text-white rounded-xl font-bold"
+        >
+          Log in now
+        </Link>
+      </div>
+    );
 
   const activeCount = userProjects?.length || 0;
   const matchesCount = allProjects?.filter((p: Project) => !userProjects?.some((up: Project) => up.id === p.id)).length || 0;
@@ -57,13 +73,13 @@ const DashboardPage = () => {
           icon={<History size={22} />}
           iconsize="text-5xl"
           title="Applications"
-          stats="02"
+          stats={(stats?.applications ?? 0).toString().padStart(2, "0")}
         />
         <StatsCards
           icon={<Trophy size={22} />}
           iconsize="text-5xl"
           title="Shipped"
-          stats="00"
+          stats={(stats?.shipped ?? 0).toString().padStart(2, "0")}
         />
         <StatsCards
           icon={<Sparkles size={22} />}
@@ -120,15 +136,23 @@ const DashboardPage = () => {
         </div>
 
         <div className="flex flex-col gap-4">
-          <WorkspaceListCard
-            id="p1"
-            title="SolarOS Dashboard"
-            description="A modern and responsive dashboard for SolarOS, a solar energy management system."
-            tags={["React", "Next.js", "Tailwind CSS", "TypeScript"]}
-            status="In Progress"
-            progress="75%"
-            profiles={["Profile 1", "Profile 2", "Profile 3"]}
-          />
+          {(workspaces || []).slice(0, 3).map((ws: Workspace) => (
+            <WorkspaceListCard
+              key={ws.id}
+              id={ws.id}
+              image={ws.avatar_url || undefined}
+              title={ws.name}
+              description={ws.description || "No description yet."}
+              status={(ws.status || "active").toString()}
+              progress={0}
+              profiles={(ws.members || []).map((m) => m.image || m.name)}
+            />
+          ))}
+          {(workspaces || []).length === 0 && (
+            <div className="bg-white dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 text-sm font-bold text-slate-500 dark:text-slate-400">
+              No workspaces yet. Create a project to generate your first workspace.
+            </div>
+          )}
         </div>
       </section>
     </div>

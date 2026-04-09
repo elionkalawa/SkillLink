@@ -9,27 +9,50 @@ export async function GET(
     const { userId } = await params;
     console.log("Fetching projects for userId:", userId);
 
-    const { data: projects, error: projectsError } = await supabase
+    // 1. Fetch projects where user is the owner
+    const { data: ownedProjects, error: ownedError } = await supabase
       .from("projects")
       .select("*")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false });
+      .eq("owner_id", userId);
 
-    if (projectsError) {
-      console.error(
-        `Supabase Projects retrieval error for userId ${userId}:`,
-        JSON.stringify(projectsError, null, 2),
-      );
-      return NextResponse.json(
-        {
-          error: `Database error: ${projectsError.message}`,
-          code: projectsError.code,
-          details: projectsError.details,
-          hint: projectsError.hint,
-        },
-        { status: 500 },
-      );
+    if (ownedError) {
+      console.error("Owned projects retrieval error:", ownedError);
+      return NextResponse.json({ error: ownedError.message }, { status: 500 });
     }
+
+    // 2. Fetch projects where user is an approved member
+    const { data: memberships, error: memberError } = await supabase
+      .from("project_members")
+      .select("project_id")
+      .eq("user_id", userId)
+      .eq("status", "approved");
+
+    if (memberError) {
+      console.error("Project memberships retrieval error:", memberError);
+    }
+
+    const joinedProjectIds = (memberships || []).map(m => m.project_id);
+    
+    let joinedProjects = [];
+    if (joinedProjectIds.length > 0) {
+      const { data: joined, error: joinedError } = await supabase
+        .from("projects")
+        .select("*")
+        .in("id", joinedProjectIds);
+      
+      if (joinedError) {
+        console.error("Joined projects retrieval error:", joinedError);
+      } else {
+        joinedProjects = joined || [];
+      }
+    }
+
+    // Combine and remove duplicates (though theoretically there shouldn't be any if one is owner and other is member, but just in case)
+    const projects = [...ownedProjects, ...joinedProjects.filter(p => !ownedProjects.some(op => op.id === p.id))];
+    
+    // Sort by created_at
+    projects.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
 
     if (!projects || projects.length === 0) {
       return NextResponse.json([]);

@@ -23,12 +23,15 @@ export interface Project {
   host_verified?: boolean;
 }
 
-export interface ProjectPosition {
+export interface ProjectRole {
   id: string;
   project_id: string;
   title: string;
-  experience_level: 'ENTRY TO MID' | 'MID TO SENIOR' | 'EXPERT';
-  status: 'hiring' | 'filled';
+  description: string | null;
+  skills_required: string[];
+  vacancies: number;
+  is_open: boolean;
+  created_at: string;
 }
 
 export interface ProjectTeamMember {
@@ -41,7 +44,7 @@ export interface ProjectTeamMember {
 
 export interface ProjectDetail extends Project {
   full_description?: string;
-  positions: ProjectPosition[];
+  roles?: ProjectRole[];
   team: ProjectTeamMember[];
 }
 
@@ -52,6 +55,7 @@ export interface ProjectMember {
   id: string;
   project_id: string;
   user_id: string;
+  project_role_id?: string;
   role: MemberRole;
   status: MemberStatus;
   joined_at: string;

@@ -43,7 +43,7 @@ const createLink = (): WorkspaceLink => ({
 export default function WorkspaceHub() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoading: userLoading } = useUser();
   const { data: workspace, isLoading } = useWorkspace(id);
   const { mutateAsync: updateWorkspace, isPending: isSaving } = useUpdateWorkspace();
   const [activeTab, setActiveTab] = useState<"overview" | "chat">("overview");
@@ -137,7 +137,7 @@ export default function WorkspaceHub() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || userLoading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="animate-spin text-blue-primary" size={48} />

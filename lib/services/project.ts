@@ -9,6 +9,12 @@ export interface CreateProjectInput {
   tags?: string[];
   organization?: string;
   deadline?: string;
+  roles?: {
+    title: string;
+    description?: string;
+    vacancies: number;
+    skills_required?: string[];
+  }[];
 }
 
 export const projectService = {

@@ -37,7 +37,39 @@ export async function GET(
       return NextResponse.json({ ...project, owner: null });
     }
 
-    return NextResponse.json({ ...project, owner });
+    const { data: roles } = await supabase
+      .from("project_roles")
+      .select("*")
+      .eq("project_id", id);
+
+    const { data: workspace } = await supabase
+      .from("workspaces")
+      .select("id")
+      .eq("project_id", id)
+      .single();
+
+    const currentUser = await getCurrentUser();
+
+    let membership = null;
+
+    if (currentUser) {
+      const { data: memberData } = await supabase
+        .from("project_members")
+        .select("status, role")
+        .eq("project_id", id)
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+      
+      membership = memberData;
+    }
+
+    return NextResponse.json({ 
+      ...project, 
+      owner, 
+      roles: roles || [],
+      membership,
+      workspace: workspace || null
+    });
   } catch (error) {
     console.error("API GET Project exception:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -104,6 +136,44 @@ export async function PATCH(
     if (error) {
       console.error("Supabase PATCH Project error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Role syncing
+    if (body.roles && Array.isArray(body.roles)) {
+      const { data: existingRoles } = await supabase
+        .from("project_roles")
+        .select("id")
+        .eq("project_id", id);
+        
+      const existingRoleIds = (existingRoles || []).map((r: { id: string }) => r.id);
+      const incomingRoles = body.roles;
+      const incomingRoleIds = incomingRoles.filter((r: { id?: string }) => r.id).map((r: { id: string }) => r.id);
+      
+      const rolesToDelete = existingRoleIds.filter(rid => !incomingRoleIds.includes(rid));
+      
+      if (rolesToDelete.length > 0) {
+        await supabase.from("project_roles").delete().in("id", rolesToDelete);
+      }
+      
+      for (const role of incomingRoles) {
+        if (role.id) {
+          await supabase.from("project_roles").update({
+            title: role.title,
+            description: role.description || null,
+            vacancies: role.vacancies,
+            skills_required: role.skills_required || [],
+          }).eq("id", role.id);
+        } else {
+          await supabase.from("project_roles").insert({
+            project_id: id,
+            title: role.title,
+            description: role.description || null,
+            vacancies: role.vacancies,
+            skills_required: role.skills_required || [],
+            is_open: true
+          });
+        }
+      }
     }
 
     return NextResponse.json(data);

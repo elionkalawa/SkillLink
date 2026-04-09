@@ -86,7 +86,7 @@ export const AuthForm = ({ type }: AuthFormProps) => {
         </p>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800">
+      <div className="bg-white dark:bg-gray-900 p-5 sm:p-6 md:p-8 rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800">
         <form onSubmit={handleSubmit} className="space-y-4">
           {type === "register" && (
             <div className="space-y-4">

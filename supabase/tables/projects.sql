@@ -20,11 +20,24 @@ create table if not exists projects (
   created_at timestamp with time zone default now()
 );
 
+-- PROJECT ROLES TABLE
+create table if not exists project_roles (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references projects(id) on delete cascade,
+  title text not null,
+  description text,
+  skills_required text[] default '{}',
+  vacancies integer not null default 1,
+  is_open boolean default true,
+  created_at timestamp with time zone default now()
+);
+
 -- PROJECT MEMBERS TABLE
 create table if not exists project_members (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
   user_id uuid not null references next_auth.users(id) on delete cascade,
+  project_role_id uuid references project_roles(id) on delete set null,
   role member_role default 'member',
   status member_status default 'pending',
   joined_at timestamp with time zone default now(),
@@ -33,6 +46,7 @@ create table if not exists project_members (
 
 -- RLS POLICIES
 alter table projects enable row level security;
+alter table project_roles enable row level security;
 alter table project_members enable row level security;
 
 -- Policy: Everyone can view "open" projects (Marketplace)
@@ -44,6 +58,21 @@ using (status = 'open' or owner_id = auth.uid());
 create policy "Owners can manage their projects"
 on projects for all
 using (owner_id = auth.uid());
+
+-- Project Roles Policies
+create policy "Anyone can view project roles"
+on project_roles for select
+using (true);
+
+create policy "Owners can manage project roles"
+on project_roles for all
+using (
+  exists (
+    select 1 from projects 
+    where id = project_roles.project_id 
+    and owner_id = auth.uid()
+  )
+);
 
 -- Project Members Policies
 create policy "Users can view memberships of their own projects"

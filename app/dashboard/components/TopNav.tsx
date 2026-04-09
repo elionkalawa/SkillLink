@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Profile from "@/components/Profile";
 import { useUnreadNotificationsCount } from "@/hooks/useNotifications";
+import { useUnreadMessagesCount } from "@/hooks";
 
 export default function TopNav() {
   const pathname = usePathname();
   const { data: unreadCount = 0 } = useUnreadNotificationsCount();
+  const { data: unreadMessages = 0 } = useUnreadMessagesCount();
 
   return (
     <div className="flex items-center gap-4">
@@ -32,9 +34,11 @@ export default function TopNav() {
           className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-slate-50 dark:bg-gray-800/50 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors"
         >
           <MessageCircle className="text-slate-500 hover:text-blue-primary transition-colors" />
-          <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-black text-white bg-indigo-500 rounded-lg shadow-lg shadow-indigo-200 dark:shadow-none border-2 border-white dark:border-zinc-900">
-            2
-          </span>
+          {unreadMessages > 0 && (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-black text-white bg-indigo-500 rounded-lg shadow-lg shadow-indigo-200 dark:shadow-none border-2 border-white dark:border-zinc-900">
+              {unreadMessages > 9 ? "9+" : unreadMessages}
+            </span>
+          )}
         </Link>
       )}
 

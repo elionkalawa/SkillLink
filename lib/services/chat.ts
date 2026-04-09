@@ -1,74 +1,66 @@
-import { supabase } from "../supabaseClient";
-import { Chat, Message } from "@/types";
+import { Chat, ChatRecipient, Message } from "@/types";
 
 export const chatService = {
-  /**
-   * Fetches all conversations for the current user including participant info
-   */
-  async getChats(userId: string) {
-    const { data, error } = await supabase
-      .from("chat_participants")
-      .select(`
-        chat_id,
-        chats (
-          id,
-          created_at,
-          updated_at,
-          last_message,
-          is_group,
-          name
-        )
-      `)
-      .eq("user_id", userId);
-
-    if (error) throw error;
-
-    return data.map(
-      (d: { chat_id: string; chats: Omit<Chat, "participants" | "messages"> | Omit<Chat, "participants" | "messages">[] }) => {
-        // Supabase may return the joined relation as an array or single object
-        const chat = Array.isArray(d.chats) ? d.chats[0] : d.chats;
-        return chat as Chat;
-      }
-    );
+  async getChats() {
+    const res = await fetch("/api/chats");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to fetch chats");
+    }
+    return res.json() as Promise<Chat[]>;
   },
 
-  
-  /**
-   * Fetches messages for a specific chat
-   */
   async getMessages(chatId: string) {
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("chat_id", chatId)
-      .order("created_at", { ascending: true });
-
-    if (error) throw error;
-    return data as Message[];
+    const res = await fetch(`/api/chats/${chatId}/messages`);
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to fetch messages");
+    }
+    return res.json() as Promise<Message[]>;
   },
 
-  /**
-   * Sends a message to a chat
-   */
-  async sendMessage(chatId: string, senderId: string, content: string) {
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        chat_id: chatId,
-        sender_id: senderId,
-        content: content,
-      })
-      .select()
-      .single();
+  async sendMessage(chatId: string, content: string) {
+    const res = await fetch(`/api/chats/${chatId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to send message");
+    }
+    return res.json() as Promise<Message>;
+  },
 
-    if (error) throw error;
+  async getUnreadCount() {
+    const res = await fetch("/api/chats/unread-count");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to fetch unread count");
+    }
+    const data = (await res.json()) as { count: number };
+    return data.count;
+  },
 
-    // Optional: Update chat's last_message
-    await supabase
-      .from("chats")
-      .update({ last_message: content, updated_at: new Date().toISOString() })
-      .eq("id", chatId);
+  async getRecipients() {
+    const res = await fetch("/api/chats/recipients");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to fetch chat recipients");
+    }
+    return res.json() as Promise<ChatRecipient[]>;
+  },
 
-    return data as Message;
-  }
+  async createOrGetDirectChat(recipientId: string) {
+    const res = await fetch("/api/chats/direct", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recipientId }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to create direct chat");
+    }
+    return res.json() as Promise<Chat>;
+  },
 };

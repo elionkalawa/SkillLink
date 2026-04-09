@@ -9,6 +9,15 @@ export async function POST(
   try {
     const { id: projectId } = await params;
     const user = await getCurrentUser();
+    
+    // Parse roleId from body if it exists
+    let roleId = null;
+    try {
+      const body = await request.json();
+      roleId = body.roleId;
+    } catch {
+      // Body might be empty, that's okay
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -43,12 +52,30 @@ export async function POST(
       return NextResponse.json({ error: "Owners are already members of their own project." }, { status: 400 });
     }
 
+    // Verify role exists and is open if roleId is provided
+    if (roleId) {
+      const { data: role, error: roleError } = await supabase
+        .from("project_roles")
+        .select("is_open")
+        .eq("id", roleId)
+        .eq("project_id", projectId)
+        .single();
+        
+      if (roleError || !role) {
+        return NextResponse.json({ error: "Role not found for this project" }, { status: 404 });
+      }
+      if (!role.is_open) {
+        return NextResponse.json({ error: "This role is no longer accepting applications" }, { status: 400 });
+      }
+    }
+
     // 3. Create pending membership
     const { data: member, error: memberError } = await supabase
       .from("project_members")
       .insert({
         project_id: projectId,
         user_id: user.id,
+        project_role_id: roleId,
         status: 'pending',
         role: 'member'
       })

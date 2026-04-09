@@ -1,23 +1,35 @@
 "use client";
 
 import React from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Chat } from "@/types";
+
+function formatChatTime(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
 
 interface ChatSidebarProps {
   chats: Chat[];
   activeChatId: string | null;
   onSelectChat: (chatId: string | null) => void;
+  onStartChat: () => void;
 }
 
-const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeChatId, onSelectChat }) => {
+const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeChatId, onSelectChat, onStartChat }) => {
   return (
-    <div className="w-full md:w-[380px] h-full flex flex-col bg-white dark:bg-zinc-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 border border-slate-100 dark:border-zinc-800 overflow-hidden">
-      <div className="p-6 pb-2">
+    <div className="w-full md:w-[360px] lg:w-[380px] h-full flex flex-col bg-white dark:bg-zinc-900 rounded-2xl md:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-zinc-950/50 border border-slate-100 dark:border-zinc-800 overflow-hidden">
+      <div className="p-4 md:p-6 pb-2">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Messages</h1>
-          <button className="w-10 h-10 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-2xl flex items-center justify-center transition-colors">
-             <div className="w-2 h-2 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+          <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Messages</h1>
+          <button
+            onClick={onStartChat}
+            className="w-10 h-10 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-2xl flex items-center justify-center transition-colors"
+            title="Start new chat"
+            aria-label="Start new chat"
+          >
+            <Plus className="w-4 h-4 text-indigo-500" />
           </button>
         </div>
 
@@ -31,7 +43,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeChatId, onSelect
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto px-3 md:px-4 pb-4 md:pb-6 space-y-2 scrollbar-hide">
         {chats.map((chat) => {
           const isActive = chat.id === activeChatId;
           return (
@@ -52,9 +64,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeChatId, onSelect
                       </span>
                    </div>
                 </div>
-                {chat.id === "1" && !isActive && (
+                {!!chat.unread_count && chat.unread_count > 0 && !isActive && (
                   <div className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 text-white text-[11px] flex items-center justify-center rounded-full border-[3px] border-white dark:border-zinc-900 font-black shadow-sm">
-                     1
+                     {chat.unread_count > 9 ? "9+" : chat.unread_count}
                   </div>
                 )}
               </div>
@@ -65,7 +77,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeChatId, onSelect
                     {chat.name}
                   </h3>
                   <span className={`text-[10px] font-medium whitespace-nowrap ${isActive ? "text-indigo-100" : "text-slate-400 dark:text-zinc-500"}`}>
-                    9:41 AM
+                    {formatChatTime(chat.updated_at)}
                   </span>
                 </div>
                 <p className={`text-xs truncate font-medium ${isActive ? "text-indigo-50" : "text-slate-500 dark:text-zinc-500"}`}>

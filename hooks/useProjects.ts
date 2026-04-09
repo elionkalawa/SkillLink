@@ -65,17 +65,21 @@ export function useJoinProject() {
   const { user } = useUser();
 
   return useMutation({
-    mutationFn: async (projectId: string) => {
+    mutationFn: async ({ projectId, roleId }: { projectId: string; roleId?: string }) => {
       const response = await fetch(`/api/projects/${projectId}/join`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ roleId }),
       });
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to joint project");
+        throw new Error(data.error || "Failed to join project");
       }
       return response.json();
     },
-    onSuccess: (_, projectId) => {
+    onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: ["projects", projectId] });
       if (user) {
         queryClient.invalidateQueries({ queryKey: ["projects", "user", user.id] });
@@ -88,11 +92,21 @@ export function useUpdateMemberStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ projectId, memberId, status }: { projectId: string; memberId: string; status: 'approved' | 'rejected' }) => {
+    mutationFn: async ({ 
+      projectId, 
+      memberId, 
+      status, 
+      notificationId 
+    }: { 
+      projectId: string; 
+      memberId: string; 
+      status: 'approved' | 'rejected'; 
+      notificationId?: string 
+    }) => {
       const response = await fetch(`/api/projects/${projectId}/members/${memberId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, notificationId }),
       });
       if (!response.ok) {
         const data = await response.json();

@@ -1,6 +1,15 @@
 import { Workspace } from "@/types";
 
 export const workspaceService = {
+  async listWorkspaces() {
+    const res = await fetch("/api/workspaces");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to fetch workspaces");
+    }
+    return res.json() as Promise<Workspace[]>;
+  },
+
   async getWorkspace(id: string) {
     const res = await fetch(`/api/workspaces/${id}`);
     if (!res.ok) {

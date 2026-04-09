@@ -104,6 +104,26 @@ export async function POST(req: Request) {
       // We don't fail the whole request but log it
     }
 
+    // 4. Create Project Roles if provided
+    if (body.roles && body.roles.length > 0) {
+      const rolesData = body.roles.map(role => ({
+        project_id: project.id,
+        title: role.title,
+        description: role.description || null,
+        vacancies: role.vacancies,
+        skills_required: role.skills_required || [],
+        is_open: true
+      }));
+
+      const { error: rolesError } = await supabase
+        .from("project_roles")
+        .insert(rolesData);
+
+      if (rolesError) {
+        console.error("Project roles creation error:", rolesError);
+      }
+    }
+
     return NextResponse.json(project);
   } catch (error) {
     console.error("API POST Project exception:", error);
