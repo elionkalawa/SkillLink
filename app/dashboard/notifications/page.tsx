@@ -57,6 +57,9 @@ export default function NotificationsPage() {
   const isLoading = status === 'loading' || (status === 'authenticated' && notificationsLoading);
 
   const selectedNotification = notifications.find((n: Notification) => n.id === selectedId);
+  const detailStatus = selectedNotification 
+    ? (handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status) as Notification['status']
+    : undefined;
 
   // Auto-select first notification on large screens
   useEffect(() => {
@@ -141,7 +144,7 @@ export default function NotificationsPage() {
               </div>
             ) : (
               notifications.map((notification: Notification) => {
-                const currentStatus = handledActions[notification.id] || notification.metadata?.status || notification.status;
+                const currentStatus = (handledActions[notification.id] || notification.metadata?.status || notification.status) as Notification['status'];
                 
                 return (
                   <button
@@ -166,7 +169,7 @@ export default function NotificationsPage() {
                     </p>
                     <div className="flex items-center gap-3 mt-3">
                       {!notification.read && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />}
-                      {currentStatus && (currentStatus as string) !== 'pending' && (
+                      {currentStatus && currentStatus !== 'pending' && (
                         <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
                           currentStatus === 'approved' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
                         }`}>
@@ -218,13 +221,13 @@ export default function NotificationsPage() {
                     <span className="inline-block px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
                       {selectedNotification.type}
                     </span>
-                    {(handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status) && (
+                    {detailStatus && (
                       <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-full ${
-                        (handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status) === 'approved' 
+                        detailStatus === 'approved' 
                           ? 'bg-emerald-500/10 text-emerald-500' 
                           : 'bg-rose-500/10 text-rose-500'
                       }`}>
-                        {handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status}
+                        {detailStatus}
                       </span>
                     )}
                   </div>
@@ -238,9 +241,9 @@ export default function NotificationsPage() {
                     {selectedNotification.metadata?.type === 'join-request' ? (
                       <div className="space-y-4">
                         <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                          { (handledActions[selectedNotification.id] || (selectedNotification.metadata?.status as string) || (selectedNotification.status as string)) === 'pending' || !(handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status)
+                          { detailStatus === 'pending' || !detailStatus
                             ? "Action required: Review this application and either approve or reject the user's request to join your project."
-                            : `This application has been ${handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status}.`
+                            : `This application has been ${detailStatus}.`
                           }
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 pt-4">
@@ -253,7 +256,7 @@ export default function NotificationsPage() {
                           </Link>
                           
                           {/* Status-aware buttons */}
-                          {(!handledActions[selectedNotification.id] && (!selectedNotification.metadata?.status || selectedNotification.metadata.status === 'pending') && (!selectedNotification.status || selectedNotification.status === 'pending')) ? (
+                          {(!detailStatus || detailStatus === 'pending') ? (
                             <>
                               <button 
                                 onClick={() => handleAction(selectedNotification, 'approved')}
@@ -274,11 +277,11 @@ export default function NotificationsPage() {
                             </>
                           ) : (
                             <div className={`flex-1 flex items-center justify-center py-3 px-6 rounded-xl border text-sm font-black uppercase tracking-widest ${
-                              (handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status) === 'approved'
+                              detailStatus === 'approved'
                                 ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500'
                                 : 'border-rose-500/20 bg-rose-500/5 text-rose-500'
                             }`}>
-                              {(handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status) === 'approved' ? 'Approved' : 'Rejected'}
+                              {detailStatus === 'approved' ? 'Approved' : 'Rejected'}
                             </div>
                           )}
                         </div>
