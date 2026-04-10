@@ -8,6 +8,7 @@ export interface Chat {
   name?: string;
   is_group: boolean;
   unread_count?: number;
+  other_participant_id?: string | null;
   participants: ChatParticipant[];
   messages?: Message[];
 }
@@ -26,6 +27,7 @@ export interface Message {
   content: string;
   created_at: string;
   is_read: boolean;
+  read_at?: string | null;
   sender: User;
 }
 

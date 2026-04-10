@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { chatService } from "@/lib/services/chat";
+import { getDashboardCountsKey } from "./useDashboardCounts";
+import { Message } from "@/types";
 
 export const getChatsKey = ["chats"];
 export const getChatMessagesKey = (chatId: string) => ["chats", chatId, "messages"];
@@ -20,6 +22,8 @@ export function useChatMessages(chatId: string | null) {
     queryKey: getChatMessagesKey(chatId || ""),
     queryFn: () => chatService.getMessages(chatId!),
     enabled: !!chatId,
+    // Realtime handles updates — no polling needed
+    refetchInterval: false,
   });
 }
 
@@ -32,6 +36,7 @@ export function useSendMessage() {
       await queryClient.invalidateQueries({ queryKey: getChatMessagesKey(variables.chatId) });
       await queryClient.invalidateQueries({ queryKey: getChatsKey });
       await queryClient.invalidateQueries({ queryKey: getUnreadMessagesCountKey });
+      await queryClient.invalidateQueries({ queryKey: getDashboardCountsKey });
     },
   });
 }
@@ -63,3 +68,44 @@ export function useCreateDirectChat() {
   });
 }
 
+export function useMarkChatRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (chatId: string) => {
+      const res = await fetch(`/api/chats/${chatId}/read`, { method: "POST" });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to mark chat as read");
+      }
+      return res.json() as Promise<{ marked: number }>;
+    },
+    onMutate: async (chatId) => {
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: getChatMessagesKey(chatId) });
+
+      // Snapshot the previous value
+      const previousMessages = queryClient.getQueryData<Message[]>(getChatMessagesKey(chatId));
+
+      // Optimistically update to the new value
+      if (previousMessages) {
+        queryClient.setQueryData<Message[]>(getChatMessagesKey(chatId), 
+          previousMessages.map(m => ({ ...m, is_read: true }))
+        );
+      }
+
+      return { previousMessages };
+    },
+    onError: (err, chatId, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(getChatMessagesKey(chatId), context.previousMessages);
+      }
+    },
+    onSuccess: async () => {
+      // Only invalidate chats and counts, messages are already updated optimistically
+      // and will be updated by the realtime anyway
+      await queryClient.invalidateQueries({ queryKey: getChatsKey });
+      await queryClient.invalidateQueries({ queryKey: getUnreadMessagesCountKey });
+      await queryClient.invalidateQueries({ queryKey: getDashboardCountsKey });
+    },
+  });
+}

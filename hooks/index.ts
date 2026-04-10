@@ -4,3 +4,7 @@ export * from "./useChat";
 export * from "./useDashboard";
 export * from "./useNotifications";
 export * from "./useApplications";
+export * from "./useDashboardCounts";
+export * from "./usePresence";
+export * from "./useRealtimeMessages";
+export * from "./useGlobalRealtimeMessages";

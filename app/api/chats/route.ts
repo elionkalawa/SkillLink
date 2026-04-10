@@ -36,8 +36,14 @@ export async function GET() {
       .eq("user_id", user.id);
 
     if (participantsError) {
-      console.error("Supabase GET Chats participants error:", participantsError);
-      return NextResponse.json({ error: participantsError.message }, { status: 500 });
+      console.error(
+        "Supabase GET Chats participants error:",
+        participantsError,
+      );
+      return NextResponse.json(
+        { error: participantsError.message },
+        { status: 500 },
+      );
     }
 
     const chats: ChatRow[] = (participantRows || [])
@@ -70,7 +76,9 @@ export async function GET() {
     }
 
     // For 1:1 chats without an explicit name, derive the other participant's name.
-    const unnamedOneToOne = chats.filter((c) => !c.is_group && !c.name).map((c) => c.id);
+    const unnamedOneToOne = chats
+      .filter((c) => !c.is_group && !c.name)
+      .map((c) => c.id);
     const derivedNames = new Map<string, string>();
     if (unnamedOneToOne.length > 0) {
       const { data: cpRows, error: cpError } = await supabase
@@ -82,7 +90,10 @@ export async function GET() {
         const otherUserIds = Array.from(
           new Set(
             cpRows
-              .filter((r: { chat_id: string; user_id: string }) => r.user_id !== user.id)
+              .filter(
+                (r: { chat_id: string; user_id: string }) =>
+                  r.user_id !== user.id,
+              )
               .map((r: { chat_id: string; user_id: string }) => r.user_id),
           ),
         );
@@ -100,7 +111,38 @@ export async function GET() {
               if (r.user_id === user.id) continue;
               const other = userById.get(r.user_id);
               if (!other) continue;
-              derivedNames.set(r.chat_id, other.name || other.username || "Chat");
+              derivedNames.set(
+                r.chat_id,
+                other.name || other.username || "Chat",
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // For 1:1 chats, also get the other participant's ID
+    const otherParticipantIds = new Map<string, string>();
+    if (chats.length > 0) {
+      const { data: allParticipants } = await supabase
+        .from("chat_participants")
+        .select("chat_id, user_id")
+        .in("chat_id", chatIds);
+
+      if (allParticipants) {
+        // Group by chat_id
+        const participantsByChat = new Map<string, string[]>();
+        for (const p of allParticipants) {
+          if (!participantsByChat.has(p.chat_id)) participantsByChat.set(p.chat_id, []);
+          participantsByChat.get(p.chat_id)?.push(p.user_id);
+        }
+
+        for (const [chatId, userIds] of participantsByChat.entries()) {
+          const chat = chats.find(c => c.id === chatId);
+          if (chat && !chat.is_group) {
+            const otherId = userIds.find(id => id !== user.id);
+            if (otherId) {
+              otherParticipantIds.set(chatId, otherId);
             }
           }
         }
@@ -111,6 +153,7 @@ export async function GET() {
       .map((chat) => ({
         ...chat,
         name: chat.name || derivedNames.get(chat.id) || chat.name || "Chat",
+        other_participant_id: otherParticipantIds.get(chat.id) || null,
         participants: [],
         unread_count: unreadByChat.get(chat.id) || 0,
       }))
@@ -123,4 +166,3 @@ export async function GET() {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

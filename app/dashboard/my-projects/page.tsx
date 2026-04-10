@@ -7,7 +7,7 @@ import ProjectTabs from "./components/ProjectTabs";
 import TopNav from "../components/TopNav";
 import ActiveProjectCard from "./components/ActiveProjectCard";
 import CreateProjectModal from "./components/CreateProjectModal";
-import { useUserProjects, useUserApplications, useDashboardStats } from "@/hooks";
+import { useUserProjects, useUserApplications, useDashboardCounts } from "@/hooks";
 import Image from "next/image";
 
 interface Application {
@@ -38,7 +38,7 @@ const MyProjectsPage = () => {
 
   const { data: projects, isLoading } = useUserProjects();
   const { data: userApplications, isLoading: isLoadingApps } = useUserApplications();
-  const { data: stats } = useDashboardStats();
+  const { data: dashCounts } = useDashboardCounts();
   
   const workspaceProjects =
     projects?.filter((project) => (project.workspaces?.length || 0) > 0) || [];
@@ -46,7 +46,7 @@ const MyProjectsPage = () => {
   const counts = {
     projects: projects?.length || 0,
     workspaces: workspaceProjects.length,
-    applications: userApplications?.length || stats?.applications || 0,
+    applications: userApplications?.length || dashCounts?.applications || 0,
     invitations: 0,
   };
 

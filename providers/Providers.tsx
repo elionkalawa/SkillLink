@@ -5,6 +5,7 @@ import { SessionProvider } from "next-auth/react";
 import { QueryProvider } from "./QueryProvider";
 import { UserProvider } from "./UserProvider";
 import { NotificationProvider } from "./NotificationProvider";
+import { PresenceProvider } from "./PresenceProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +13,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryProvider>
         <NotificationProvider>
           <UserProvider>
-            {children}
+            <PresenceProvider>
+              {children}
+            </PresenceProvider>
           </UserProvider>
         </NotificationProvider>
       </QueryProvider>

@@ -20,12 +20,14 @@ import { LogoIcon } from "@/components/ui/LogoIcon";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useDashboardCounts } from "@/hooks/useDashboardCounts";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const activeRoute = usePathname();
+  const { data: counts } = useDashboardCounts();
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed");
@@ -120,7 +122,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               label="My Projects"
               collapsed={collapsed}
               route="/dashboard/my-projects"
-              counter={1}
+              counter={0}
               activeRoute={activeRoute}
               onClick={() => setMobileOpen(false)}
             />
@@ -138,7 +140,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               label="Messages"
               collapsed={collapsed}
               route="/dashboard/messages"
-              counter={2}
+              counter={counts?.messages || 0}
               activeRoute={activeRoute}
               onClick={() => setMobileOpen(false)}
             />
@@ -154,7 +156,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               label="Notifications"
               collapsed={collapsed}
               route="/dashboard/notifications"
-              counter={0}
+              counter={counts?.notifications || 0}
               activeRoute={activeRoute}
               onClick={() => setMobileOpen(false)}
             />

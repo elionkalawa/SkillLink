@@ -15,6 +15,7 @@ export interface User {
   experience_level?: "beginner" | "intermediate" | "advanced" | "expert" | string;
   profile_title?: string;
   role?: string;
+  last_seen?: string | null;
   created_at: string;
 }
 
