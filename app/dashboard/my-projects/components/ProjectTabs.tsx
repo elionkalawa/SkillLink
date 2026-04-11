@@ -23,20 +23,21 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({ activeTab, onTabChange, count
   ];
 
   return (
-    <div className="flex border-b border-slate-100 dark:border-zinc-800 gap-8 mb-10 overflow-x-auto scrollbar-hide">
+    <div className="flex border-b border-slate-100 dark:border-zinc-800 gap-1 sm:gap-6 mb-10 overflow-x-auto scrollbar-hide">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`flex items-center gap-2.5 pb-4 px-1 text-sm font-bold transition-all relative whitespace-nowrap ${
+          className={`flex items-center gap-2 pb-4 px-3 sm:px-1 text-sm font-bold transition-all relative whitespace-nowrap ${
             activeTab === tab.id
               ? "text-indigo-600 dark:text-indigo-400 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-indigo-600 dark:after:bg-indigo-400"
               : "text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-400"
           }`}
         >
           {tab.icon}
-          <span>{tab.label}</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-tighter ${
+          {/* Hide label text on xs, show on sm+ */}
+          <span className="hidden sm:inline">{tab.label}</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black tracking-tighter ${
             activeTab === tab.id
               ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
               : "bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400"

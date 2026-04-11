@@ -88,14 +88,16 @@ const MyProjectsPage = () => {
           ) : projects && projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <ActiveProjectCard 
-                  key={project.id} 
+                <ActiveProjectCard
+                  key={project.id}
                   id={project.id}
                   title={project.title}
                   description={project.description || "No description provided."}
                   tags={project.tags || []}
                   status={project.status === "open" ? "In Progress" : project.status}
                   workspaceId={project.workspaces?.[0]?.id}
+                  current_members_count={project.current_members_count}
+                  max_team_size={project.max_team_size}
                 />
               ))}
             </div>

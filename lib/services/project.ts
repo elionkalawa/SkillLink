@@ -7,6 +7,7 @@ export interface CreateProjectInput {
   skills_required: string[];
   max_team_size: number;
   tags?: string[];
+  location?: string;
   organization?: string;
   deadline?: string;
   roles?: {

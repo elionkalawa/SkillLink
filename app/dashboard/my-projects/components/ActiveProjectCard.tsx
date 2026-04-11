@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Box, 
-  MoreVertical, 
-  Pencil, 
-  Trash2, 
-  ChevronRight, 
-  Loader2
+import {
+  Box,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  ChevronRight,
+  Loader2,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -23,6 +24,8 @@ interface ActiveProjectCardProps {
   workspaceId?: string;
   role?: string;
   image_url?: string;
+  current_members_count?: number;
+  max_team_size?: number;
   tasks?: {
     pending: number;
     total: number;
@@ -38,6 +41,8 @@ const ActiveProjectCard: React.FC<ActiveProjectCardProps> = ({
   workspaceId,
   role,
   image_url,
+  current_members_count,
+  max_team_size,
   tasks,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -72,13 +77,19 @@ const ActiveProjectCard: React.FC<ActiveProjectCardProps> = ({
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight truncate group-hover:text-indigo-600 transition-colors">{title}</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-black uppercase tracking-wider">
                 {status}
               </span>
               <span className="text-[10px] font-bold text-slate-400">
                 {role || "Project Owner"}
               </span>
+              {max_team_size !== undefined && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+                  <Users size={11} />
+                  {current_members_count ?? 0}/{max_team_size}
+                </span>
+              )}
             </div>
           </div>
         </div>

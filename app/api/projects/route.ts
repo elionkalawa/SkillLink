@@ -14,7 +14,28 @@ export async function GET() {
       console.error("Supabase GET Projects error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json(data);
+
+    if (!data || data.length === 0) return NextResponse.json([]);
+
+    // Batch-fetch approved member counts for all projects (single query, no N+1)
+    const projectIds = data.map((p) => p.id);
+    const { data: memberRows } = await supabase
+      .from("project_members")
+      .select("project_id")
+      .in("project_id", projectIds)
+      .eq("status", "approved");
+
+    const countMap = new Map<string, number>();
+    for (const row of memberRows || []) {
+      countMap.set(row.project_id, (countMap.get(row.project_id) ?? 0) + 1);
+    }
+
+    const result = data.map((p) => ({
+      ...p,
+      current_members_count: countMap.get(p.id) ?? 0,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("API GET Projects exception:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -62,6 +83,7 @@ export async function POST(req: Request) {
       max_team_size: body.max_team_size,
       owner_id: user.id,
       status: "open",
+      location: body.location || "Remote",
       organization: body.organization,
       deadline: body.deadline,
     };

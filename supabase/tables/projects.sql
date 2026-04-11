@@ -13,6 +13,7 @@ create table if not exists projects (
   tags text[] default '{}',
   max_team_size integer not null default 1,
   status project_status default 'open',
+  location text default 'Remote',
   organization text,
   deadline timestamp with time zone,
   image_url text,

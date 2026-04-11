@@ -15,10 +15,12 @@ import {
   Loader2,
 } from "lucide-react";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import ProfileSkeleton from "./components/ProfileSkeleton";
 import SkillCard from "./components/SkillCard";
 import StackBadge from "./components/StackBadge";
 import TopNav from "../components/TopNav";
+import FollowListModal from "@/components/FollowListModal";
 import { toast } from "sonner";
 
 interface ProfileFormState {
@@ -39,6 +41,7 @@ const ProfilePage = () => {
   const { user, isLoading, refreshUser } = useUser();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [modalType, setModalType] = useState<"followers" | "following" | null>(null);
   const [form, setForm] = useState<ProfileFormState>({
     name: "",
     username: "",
@@ -51,6 +54,16 @@ const ProfilePage = () => {
     github_url: "",
     linkedin_url: "",
     portfolio_url: "",
+  });
+
+  const { data: socialStatus } = useQuery({
+    queryKey: ["users", user?.id, "follow-status"],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${user?.id}/follow/status`);
+      if (!res.ok) throw new Error("Failed to fetch follow status");
+      return res.json() as Promise<{ isFollowing: boolean; followerCount: number; followingCount: number }>;
+    },
+    enabled: !!user?.id
   });
 
   if (isLoading) {
@@ -145,6 +158,12 @@ const ProfilePage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <FollowListModal 
+        userId={user?.id || ""}
+        type={modalType || "followers"}
+        isOpen={!!modalType}
+        onClose={() => setModalType(null)}
+      />
       <div className="w-full flex items-center justify-between">
         <div>
           <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -183,9 +202,28 @@ const ProfilePage = () => {
                   <span className="text-sm font-bold text-slate-400">@{user.username}</span>
                 )}
               </div>
-              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+              
+              <div className="flex flex-wrap items-center gap-4 text-xs font-black uppercase tracking-wider pt-2">
+                <button 
+                  onClick={() => setModalType("followers")}
+                  className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors group"
+                >
+                  <span className="text-slate-900 dark:text-white group-hover:text-indigo-600">{socialStatus?.followerCount || 0}</span>
+                  <span className="text-slate-400 font-bold">Followers</span>
+                </button>
+                <button 
+                  onClick={() => setModalType("following")}
+                  className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors group"
+                >
+                  <span className="text-slate-900 dark:text-white group-hover:text-indigo-600">{socialStatus?.followingCount || 0}</span>
+                  <span className="text-slate-400 font-bold">Following</span>
+                </button>
+              </div>
+
+              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 pt-1 transition-all leading-tight">
                 {displayRole}
               </p>
+              
               <div className="flex items-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <MapPin size={14} />

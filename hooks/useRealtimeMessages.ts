@@ -37,24 +37,42 @@ export function useRealtimeMessages(chatId: string | null, currentUserId: string
           const record = (payload.new || payload.old) as Partial<Message>;
           if (record?.chat_id !== chatId) return;
 
-          console.log("Active Chat Realtime event:", payload.eventType, payload);
-
           if (payload.eventType === "INSERT") {
-            queryClient.invalidateQueries({ queryKey: getChatMessagesKey(chatId) });
+            const newMsg = payload.new as Message; // raw DB row — no .sender
+            let injected = false;
+
+            queryClient.setQueryData<Message[]>(getChatMessagesKey(chatId), (old) => {
+              if (!old) return old;
+              // Dedup: message already in cache (e.g. own message via onSuccess)
+              if (old.some((m) => m.id === newMsg.id)) {
+                injected = true;
+                return old;
+              }
+              // Remove any stale optimistic placeholders (race: realtime before onSuccess)
+              const withoutOptimistic = old.filter((m) => !m.id.startsWith("optimistic-"));
+              // Look up sender from messages already in cache to avoid a network roundtrip
+              const senderFromCache = withoutOptimistic.find(
+                (m) => m.sender_id === newMsg.sender_id,
+              )?.sender;
+              if (!senderFromCache) return old; // fallback to invalidate below
+              injected = true;
+              return [...withoutOptimistic, { ...newMsg, sender: senderFromCache }];
+            });
+
+            // Only fall back to a network fetch when sender wasn't in the cache
+            if (!injected) {
+              queryClient.invalidateQueries({ queryKey: getChatMessagesKey(chatId) });
+            }
           } else if (payload.eventType === "UPDATE") {
-             // Handle read receipts
-             const updated = payload.new as Message;
-             queryClient.setQueryData<Message[]>(
-                getChatMessagesKey(chatId),
-                (old) => {
-                  if (!old) return old;
-                  return old.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
-                }
-             );
-             queryClient.invalidateQueries({ queryKey: getChatMessagesKey(chatId) });
+            // Read receipts — update in place, no extra roundtrip
+            const updated = payload.new as Message;
+            queryClient.setQueryData<Message[]>(getChatMessagesKey(chatId), (old) => {
+              if (!old) return old;
+              return old.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
+            });
           }
 
-          // Always refresh sidebar
+          // Always refresh sidebar counts / preview
           queryClient.invalidateQueries({ queryKey: getChatsKey });
           queryClient.invalidateQueries({ queryKey: getUnreadMessagesCountKey });
           queryClient.invalidateQueries({ queryKey: getDashboardCountsKey });

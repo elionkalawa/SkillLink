@@ -61,3 +61,39 @@ body {
   color: var(--foreground);
   font-family: 'Inter', sans-serif;
 }
+
+/* ── Subtle blended scrollbars ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,0.3) transparent;
+}
+.dark * {
+  scrollbar-color: rgba(63,63,70,0.5) transparent;
+}
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148,163,184,0.3);
+  border-radius: 999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(63,63,70,0.5);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148,163,184,0.6);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(63,63,70,0.9);
+}
+/* scrollbar-hide utility still works for explicit hiding */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -20,9 +20,14 @@ import SkillCard from "../components/SkillCard";
 import StackBadge from "../components/StackBadge";
 import ProfileSkeleton from "../components/ProfileSkeleton";
 
+import { FollowButton } from "@/components/FollowButton";
+import FollowListModal from "@/components/FollowListModal";
+import { useState } from "react";
+
 export default function PublicProfilePage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
+  const [modalType, setModalType] = useState<"followers" | "following" | null>(null);
 
   const { data: user, isLoading } = useQuery({
     queryKey: ["users", id],
@@ -31,6 +36,16 @@ export default function PublicProfilePage() {
       if (!response.ok) throw new Error("User not found");
       return response.json();
     }
+  });
+
+  const { data: socialStatus } = useQuery({
+    queryKey: ["users", id, "follow-status"],
+    queryFn: async () => {
+      const res = await fetch(`/api/users/${id}/follow/status`);
+      if (!res.ok) throw new Error("Failed to fetch follow status");
+      return res.json() as Promise<{ isFollowing: boolean; followerCount: number; followingCount: number }>;
+    },
+    enabled: !!id
   });
 
   if (isLoading) return <ProfileSkeleton />;
@@ -46,6 +61,12 @@ export default function PublicProfilePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 md:space-y-10 py-6 md:py-8 px-3 sm:px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <FollowListModal 
+        userId={id}
+        type={modalType || "followers"}
+        isOpen={!!modalType}
+        onClose={() => setModalType(null)}
+      />
       
       {/* Header / Actions */}
       <div className="flex items-center justify-between gap-3">
@@ -83,10 +104,29 @@ export default function PublicProfilePage() {
                   Verified Skill
                 </span>
               </div>
-              <p className="text-base sm:text-lg md:text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+              
+              <div className="flex flex-wrap items-center gap-4 text-xs font-black uppercase tracking-wider pt-2">
+                <button 
+                  onClick={() => setModalType("followers")}
+                  className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors group"
+                >
+                  <span className="text-slate-900 dark:text-white group-hover:text-indigo-600">{socialStatus?.followerCount || 0}</span>
+                  <span className="text-slate-400 font-bold">Followers</span>
+                </button>
+                <button 
+                  onClick={() => setModalType("following")}
+                  className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors group"
+                >
+                  <span className="text-slate-900 dark:text-white group-hover:text-indigo-600">{socialStatus?.followingCount || 0}</span>
+                  <span className="text-slate-400 font-bold">Following</span>
+                </button>
+              </div>
+
+              <p className="text-base sm:text-lg md:text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 pt-1 transition-all">
                 <Briefcase size={20} />
                 {user.profile_title || user.role || "Independent Developer"}
               </p>
+              
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm font-bold text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <MapPin size={16} />
@@ -104,9 +144,10 @@ export default function PublicProfilePage() {
               </div>
             </div>
 
-            <div className="flex gap-3 pb-2">
-               <button className="w-full sm:w-auto px-5 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-3xl bg-indigo-600 text-white font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 dark:shadow-none active:scale-95 flex items-center justify-center gap-2">
-                  <Mail size={18} /> Message
+            <div className="flex flex-col sm:flex-row gap-3 pb-2 w-full md:w-auto">
+               <FollowButton userId={id} size="lg" className="w-full sm:w-auto shadow-xl" />
+               <button className="w-full sm:w-auto px-5 sm:px-8 py-3 sm:py-4 rounded-2xl sm:rounded-3xl bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 text-slate-900 dark:text-white font-black text-sm hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                  <Mail size={18} className="text-indigo-600" /> Message
                </button>
             </div>
           </div>

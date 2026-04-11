@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { chatService } from "@/lib/services/chat";
 import { getDashboardCountsKey } from "./useDashboardCounts";
-import { Message } from "@/types";
+import { Message, User } from "@/types";
 
 export const getChatsKey = ["chats"];
 export const getChatMessagesKey = (chatId: string) => ["chats", chatId, "messages"];
@@ -27,16 +27,50 @@ export function useChatMessages(chatId: string | null) {
   });
 }
 
-export function useSendMessage() {
+export function useSendMessage(currentUser?: User | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ chatId, content }: { chatId: string; content: string }) =>
       chatService.sendMessage(chatId, content),
-    onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: getChatMessagesKey(variables.chatId) });
-      await queryClient.invalidateQueries({ queryKey: getChatsKey });
-      await queryClient.invalidateQueries({ queryKey: getUnreadMessagesCountKey });
-      await queryClient.invalidateQueries({ queryKey: getDashboardCountsKey });
+    onMutate: async ({ chatId, content }) => {
+      await queryClient.cancelQueries({ queryKey: getChatMessagesKey(chatId) });
+      const previousMessages = queryClient.getQueryData<Message[]>(getChatMessagesKey(chatId));
+
+      if (currentUser) {
+        const optimisticMsg: Message = {
+          id: `optimistic-${Date.now()}`,
+          chat_id: chatId,
+          sender_id: currentUser.id,
+          content,
+          created_at: new Date().toISOString(),
+          is_read: false,
+          sender: currentUser,
+        };
+        queryClient.setQueryData<Message[]>(
+          getChatMessagesKey(chatId),
+          (old) => [...(old ?? []), optimisticMsg],
+        );
+      }
+
+      return { previousMessages, chatId };
+    },
+    onSuccess: (newMessage, { chatId }) => {
+      // Replace the optimistic placeholder with the confirmed server message
+      queryClient.setQueryData<Message[]>(getChatMessagesKey(chatId), (old) => {
+        if (!old) return old;
+        const withoutOptimistic = old.filter((m) => !m.id.startsWith("optimistic-"));
+        // Guard against duplicate if realtime already injected the real message
+        if (withoutOptimistic.some((m) => m.id === newMessage.id)) return withoutOptimistic;
+        return [...withoutOptimistic, { ...newMessage, sender: currentUser ?? newMessage.sender }];
+      });
+      queryClient.invalidateQueries({ queryKey: getChatsKey });
+      queryClient.invalidateQueries({ queryKey: getUnreadMessagesCountKey });
+      queryClient.invalidateQueries({ queryKey: getDashboardCountsKey });
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousMessages !== undefined) {
+        queryClient.setQueryData(getChatMessagesKey(context.chatId), context.previousMessages);
+      }
     },
   });
 }

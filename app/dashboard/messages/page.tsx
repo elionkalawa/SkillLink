@@ -4,17 +4,14 @@ import React, { useMemo, useState, useEffect, useCallback } from "react";
 import ChatSidebar from "./components/ChatSidebar";
 import ChatWindow from "./components/ChatWindow";
 import TopNav from "../components/TopNav";
-import {
-  useChats,
-  useChatMessages,
-  useSendMessage,
-  useChatRecipients,
-  useCreateDirectChat,
-  useMarkChatRead,
-} from "@/hooks";
+import { useChats, useChatMessages, useSendMessage, useChatRecipients, useCreateDirectChat, useMarkChatRead } from "@/hooks";
 import { useUser } from "@/hooks/useUser";
 import { usePresence } from "@/hooks/usePresence";
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { X, Search, UserPlus, ArrowRight } from "lucide-react";
+import Image from "next/image";
 import MessagesLoading from "./loading";
 
 const MessagesPage = () => {
@@ -31,7 +28,7 @@ const MessagesPage = () => {
   const { data: recipients = [], isLoading: recipientsLoading } =
     useChatRecipients();
   const createDirectChat = useCreateDirectChat();
-  const sendMessage = useSendMessage();
+  const sendMessage = useSendMessage(user);
   const { mutate: markAsRead, isPending: isMarkingRead } = useMarkChatRead();
 
   // Presence tracking
@@ -90,6 +87,55 @@ const MessagesPage = () => {
     return chatParticipantMap.get(activeChat.id) || null;
   }, [activeChat, chatParticipantMap]);
 
+  interface Recipient {
+    id: string;
+    name: string;
+    username: string;
+    image: string | null;
+    bio: string | null;
+    skills: string[];
+    relationship: "peer" | "following" | "allowed_follower";
+  }
+
+  const categorizedRecipients = useMemo(() => {
+    const categories = {
+      peer: [] as Recipient[],
+      following: [] as Recipient[],
+      allowed_follower: [] as Recipient[]
+    };
+    (recipients as Recipient[]).forEach((r) => {
+      if (r.relationship === "peer") categories.peer.push(r);
+      else if (r.relationship === "following") categories.following.push(r);
+      else categories.allowed_follower.push(r);
+    });
+    return categories;
+  }, [recipients]);
+
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const filteredRecipients = useMemo(() => {
+    if (!recipientSearch) return categorizedRecipients;
+    const lower = recipientSearch.toLowerCase();
+    const filter = (list: Recipient[]) => list.filter(r => 
+      (r.name || "").toLowerCase().includes(lower) || 
+      (r.username || "").toLowerCase().includes(lower)
+    );
+    return {
+      peer: filter(categorizedRecipients.peer),
+      following: filter(categorizedRecipients.following),
+      allowed_follower: filter(categorizedRecipients.allowed_follower)
+    };
+  }, [categorizedRecipients, recipientSearch]);
+
+  const { data: pendingFollowers = [], refetch: refetchPending } = useQuery({
+    queryKey: ["users", "pending-followers"],
+    queryFn: async () => {
+      const res = await fetch("/api/user/followers/pending"); 
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: showNewChatModal
+  });
+
   // Mark chat as read when selecting it
   const handleSelectChat = useCallback(
     (chatId: string | null) => {
@@ -130,6 +176,18 @@ const MessagesPage = () => {
     const chat = await createDirectChat.mutateAsync(recipientId);
     setActiveChatId(chat.id);
     setShowNewChatModal(false);
+  };
+
+  const handleAllowFollower = async (followerId: string) => {
+    try {
+      const res = await fetch(`/api/users/${followerId}/follow/allow`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to allow follower");
+      toast.success("Follower allowed to message");
+      refetchPending();
+      // Recipients list will automatically update via React Query in useChatRecipients
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "An error occurred");
+    }
   };
 
   return (
@@ -185,71 +243,140 @@ const MessagesPage = () => {
       </div>
 
       {showNewChatModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Start new chat
-              </h2>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-300">
+            {/* Modal Header */}
+            <div className="px-8 py-6 border-b border-slate-50 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-800/50">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Start New Chat
+                </h2>
+                <p className="text-xs font-bold text-slate-400 mt-0.5">Choose a collaborator or connection</p>
+              </div>
               <button
-                className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 text-slate-400 hover:text-rose-500 transition-all active:scale-95 shadow-sm"
                 onClick={() => setShowNewChatModal(false)}
               >
-                Close
+                <X size={20} />
               </button>
             </div>
-            <div className="max-h-72 overflow-y-auto space-y-2">
+
+            {/* Search Input */}
+            <div className="px-8 py-4 bg-white dark:bg-zinc-900">
+              <div className="relative group">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Search connections..." 
+                  value={recipientSearch}
+                  onChange={(e) => setRecipientSearch(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 rounded-2xl text-sm font-bold placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Recipients List */}
+            <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 scrollbar-hide">
               {recipientsLoading && (
-                <div className="text-sm font-medium text-slate-500">
-                  Loading recipients...
+                <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                  <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-indigo-600 animate-spin mb-4" />
+                  <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Searching...</p>
                 </div>
               )}
-              {!recipientsLoading && recipients.length === 0 && (
-                <div className="text-sm font-medium text-slate-500">
-                  No eligible recipients yet. Join a project/workspace first.
+
+              {/* Pending Approvals */}
+              {!recipientSearch && pendingFollowers.length > 0 && (
+                <div className="space-y-3">
+                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    Pending Approvals
+                  </h3>
+                  <div className="space-y-2">
+                    {pendingFollowers.map((follower: { id: string; name: string }) => (
+                      <div key={follower.id} className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center font-black text-amber-600">
+                            {follower.name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{follower.name}</p>
+                            <p className="text-[10px] font-bold text-amber-600/70">Wants to message you</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleAllowFollower(follower.id)}
+                          className="px-4 py-2 bg-slate-900 dark:bg-amber-500 text-white text-[10px] font-black rounded-lg hover:scale-105 active:scale-95 transition-all uppercase tracking-wider"
+                        >
+                          Allow
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {recipients.map((recipient) => {
-                const recipientOnline = isOnline(recipient.id);
+
+              {Object.entries(filteredRecipients).map(([category, list]) => {
+                if (list.length === 0) return null;
                 return (
-                  <button
-                    key={recipient.id}
-                    className="w-full text-left px-3 py-3 rounded-xl bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors"
-                    onClick={() => handleStartChat(recipient.id)}
-                    disabled={createDirectChat.isPending}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-sm font-bold text-indigo-500">
-                          {(recipient.name || recipient.username || "U").charAt(
-                            0,
-                          )}
-                        </div>
-                        <span
-                          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-50 dark:border-zinc-800 ${
-                            recipientOnline
-                              ? "bg-emerald-500"
-                              : "bg-slate-300 dark:bg-zinc-600"
-                          }`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-slate-900 dark:text-zinc-100">
-                          {recipient.name || recipient.username || "User"}
-                        </div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-zinc-400">
-                          {recipientOnline ? (
-                            <span className="text-emerald-500">Online</span>
-                          ) : (
-                            (recipient.skills || []).slice(0, 3).join(", ") ||
-                            "No skills listed"
-                          )}
-                        </div>
-                      </div>
+                  <div key={category} className="space-y-3">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      {category.replace("_", " ")}s
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      {list.map((recipient) => {
+                        const online = isOnline(recipient.id);
+                        return (
+                          <button
+                            key={recipient.id}
+                            onClick={() => handleStartChat(recipient.id)}
+                            className="group flex items-center gap-4 p-4 rounded-[20px] bg-slate-50 dark:bg-zinc-800/40 border border-slate-50 dark:border-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 hover:border-indigo-600/20 hover:shadow-xl hover:shadow-indigo-500/5 transition-all text-left"
+                          >
+                            <div className="relative">
+                              <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-indigo-500/10 to-purple-500/10 flex items-center justify-center text-lg font-black text-indigo-600">
+                                {recipient.image ? (
+                                  <Image src={recipient.image} alt={recipient.name} fill className="object-cover rounded-2xl" />
+                                ) : (
+                                  (recipient.name || recipient.username || "U").charAt(0)
+                                )}
+                              </div>
+                              <span
+                                className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-4 border-slate-50 dark:border-zinc-900 group-hover:scale-110 transition-transform ${
+                                  online ? "bg-emerald-500" : "bg-slate-300 dark:bg-zinc-600"
+                                }`}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 truncate group-hover:text-indigo-600 transition-colors">
+                                {recipient.name || recipient.username || "User"}
+                              </h4>
+                              <p className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 truncate mt-0.5">
+                                {online ? (
+                                  <span className="text-emerald-500">Active now</span>
+                                ) : (
+                                  (recipient.skills || []).slice(0, 3).join(" • ") || "Community Member"
+                                )}
+                              </p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-zinc-900 opacity-0 group-hover:opacity-100 flex items-center justify-center text-indigo-600 shadow-sm transition-all -translate-x-2 group-hover:translate-x-0">
+                              <ArrowRight size={16} />
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
+
+              {!recipientsLoading && recipients.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-slate-300 mb-4">
+                    <UserPlus size={32} />
+                  </div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">No connections found</h4>
+                  <p className="text-xs font-bold text-slate-400 max-w-[200px] mt-2">Try following more people or joining active projects.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 -- NOTIFICATION TYPE ENUM
 -- Note: 'create type' will error if it already exists. 
 -- For migrations, we usually skip if not absolute necessary or check for existence.
--- create type notification_type as enum ('invite', 'approval', 'message', 'project-update');
+-- create type notification_type as enum ('invite', 'approval', 'message', 'project-update', 'follow');
 
 -- NOTIFICATIONS TABLE
 create table if not exists notifications (

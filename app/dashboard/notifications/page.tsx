@@ -26,18 +26,19 @@ import { toast } from "sonner";
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'invite' | 'approval' | 'message' | 'project-update' | 'join-request';
+  type: 'invite' | 'approval' | 'message' | 'project-update' | 'join-request' | 'follow';
   message: string;
   read: boolean;
   link?: string;
   created_at: string;
-  status?: 'pending' | 'approved' | 'rejected'; // Added status
+  status?: 'pending' | 'approved' | 'rejected' | 'following'; // Added status
   metadata?: {
     projectId: string;
     applicantId: string;
     memberId: string;
+    followerId: string;
     type: string;
-    status?: 'pending' | 'approved' | 'rejected'; // Added status in metadata
+    status?: 'pending' | 'approved' | 'rejected' | 'following'; // Added status in metadata
   };
 }
 
@@ -52,7 +53,7 @@ export default function NotificationsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   // Local state to track actions taken in the current session
-  const [handledActions, setHandledActions] = useState<Record<string, 'approved' | 'rejected'>>({});
+  const [handledActions, setHandledActions] = useState<Record<string, 'approved' | 'rejected' | 'following'>>({});
 
   const isLoading = status === 'loading' || (status === 'authenticated' && notificationsLoading);
 
@@ -60,6 +61,23 @@ export default function NotificationsPage() {
   const detailStatus = selectedNotification 
     ? (handledActions[selectedNotification.id] || selectedNotification.metadata?.status || selectedNotification.status) as Notification['status']
     : undefined;
+
+  const handleFollowBack = async (notification: Notification) => {
+    if (!notification.metadata?.followerId) return;
+    setProcessingId(notification.id);
+    try {
+      const res = await fetch(`/api/users/${notification.metadata.followerId}/follow`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to follow back");
+      
+      setHandledActions(prev => ({ ...prev, [notification.id]: 'following' }));
+      toast.success("Following back!");
+      if (!notification.read) markAsReadMutation.mutate(notification.id);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Action failed");
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   // Auto-select first notification on large screens
   useEffect(() => {
@@ -238,7 +256,41 @@ export default function NotificationsPage() {
 
                   {/* Context-specific actions */}
                   <div className="space-y-6">
-                    {selectedNotification.metadata?.type === 'join-request' ? (
+                    {selectedNotification.type === 'follow' ? (
+                       <div className="space-y-4">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium font-inter">
+                          { detailStatus === 'following'
+                            ? "You are now following this user back."
+                            : "Reciprocate the connection and start building your network together."
+                          }
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                           <Link 
+                            href={`/dashboard/profile/${selectedNotification.metadata?.followerId}`}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white text-sm font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all"
+                          >
+                            <ExternalLink size={16} />
+                            View Profile
+                          </Link>
+                          
+                          {detailStatus !== 'following' ? (
+                            <button 
+                              onClick={() => handleFollowBack(selectedNotification)}
+                              disabled={!!processingId}
+                              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20"
+                            >
+                              {processingId === selectedNotification.id ? <Loader2 size={16} className="animate-spin" /> : <div className="w-1.5 h-1.5 rounded-full bg-indigo-200 animate-pulse" />}
+                              Follow Back
+                            </button>
+                          ) : (
+                            <div className="flex-1 flex items-center justify-center py-3 px-6 rounded-xl border border-indigo-500/20 bg-indigo-500/5 text-indigo-500 text-sm font-black uppercase tracking-widest gap-2">
+                              <Check size={16} />
+                              Following
+                            </div>
+                          )}
+                        </div>
+                       </div>
+                    ) : selectedNotification.metadata?.type === 'join-request' ? (
                       <div className="space-y-4">
                         <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
                           { detailStatus === 'pending' || !detailStatus

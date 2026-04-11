@@ -112,7 +112,7 @@ export default function ProjectDetailPage() {
             {user && project.owner_id === user.id && (
               <button 
                 onClick={() => setIsEditModalOpen(true)}
-                className="hidden md:flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all"
+                className="flex items-center gap-2 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all"
               >
                 Edit Project
               </button>

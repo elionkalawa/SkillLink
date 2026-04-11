@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { getChatsKey, getUnreadMessagesCountKey, getChatMessagesKey } from "./useChat";
+import { getChatsKey, getUnreadMessagesCountKey } from "./useChat";
 import { getDashboardCountsKey } from "./useDashboardCounts";
 import { useUser } from "./useUser";
 import { Message, Chat } from "@/types";
@@ -64,13 +64,12 @@ export function useGlobalRealtimeMessages() {
             const record = (payload.new || payload.old) as Partial<Message>;
             if (!record?.chat_id || !chatIds.includes(record.chat_id)) return;
 
-            console.log("Global Message Event:", record.chat_id, payload.eventType);
-            
-            // Refetch EVERYTHING relevant
+            // Refresh sidebar preview + badge counts only.
+            // The active-chat hook (useRealtimeMessages) handles injecting the
+            // message into the message list — no need to refetch here.
             queryClient.invalidateQueries({ queryKey: getChatsKey });
             queryClient.invalidateQueries({ queryKey: getUnreadMessagesCountKey });
             queryClient.invalidateQueries({ queryKey: getDashboardCountsKey });
-            queryClient.refetchQueries({ queryKey: getChatMessagesKey(record.chat_id) });
           }
         )
         // 2. Listen for CHAT table updates (last_message, updated_at)

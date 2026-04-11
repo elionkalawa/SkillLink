@@ -110,7 +110,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             />
             <SidebarItem
               icon={<Compass size={22} />}
-              label="Marketplace"
+              label="Explore"
               collapsed={collapsed}
               route="/dashboard/explore"
               counter={0}

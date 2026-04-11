@@ -13,6 +13,7 @@ export interface Project {
   max_team_size: number;
   current_members_count: number;
   status: ProjectStatus;
+  location?: string;
   created_at: string;
   deadline?: string;
   image_url?: string;

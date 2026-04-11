@@ -34,7 +34,72 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden: Only owners can approve members" }, { status: 403 });
     }
 
-    // 2. Update member status
+    // 2. Fetch the pending member record first (needed for pre-checks)
+    const { data: pendingMember, error: fetchMemberError } = await supabase
+      .from("project_members")
+      .select("user_id, project_role_id, status")
+      .eq("id", memberId)
+      .single();
+
+    if (fetchMemberError || !pendingMember) {
+      return NextResponse.json({ error: "Membership record not found" }, { status: 404 });
+    }
+
+    // 2a. Pre-checks only needed when approving
+    if (status === 'approved') {
+      // Guard: role vacancy check
+      if (pendingMember.project_role_id) {
+        const { data: role } = await supabase
+          .from("project_roles")
+          .select("vacancies, is_open, title")
+          .eq("id", pendingMember.project_role_id)
+          .single();
+
+        if (role) {
+          if (!role.is_open) {
+            return NextResponse.json(
+              { error: `Role "${role.title}" is already closed.` },
+              { status: 409 }
+            );
+          }
+
+          const { count: approvedForRole } = await supabase
+            .from("project_members")
+            .select("id", { count: "exact", head: true })
+            .eq("project_role_id", pendingMember.project_role_id)
+            .eq("status", "approved");
+
+          if ((approvedForRole ?? 0) >= role.vacancies) {
+            return NextResponse.json(
+              { error: `Role "${role.title}" has no remaining vacancies.` },
+              { status: 409 }
+            );
+          }
+        }
+      }
+
+      // Guard: overall team size check
+      const { data: fullProject } = await supabase
+        .from("projects")
+        .select("max_team_size")
+        .eq("id", projectId)
+        .single();
+
+      const { count: approvedTotal } = await supabase
+        .from("project_members")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId)
+        .eq("status", "approved");
+
+      if (fullProject && (approvedTotal ?? 0) >= fullProject.max_team_size) {
+        return NextResponse.json(
+          { error: `Team is full (${fullProject.max_team_size} / ${fullProject.max_team_size} members).` },
+          { status: 409 }
+        );
+      }
+    }
+
+    // 2b. Commit the status update
     const { data: member, error: memberError } = await supabase
       .from("project_members")
       .update({ status })
@@ -43,7 +108,7 @@ export async function POST(
       .single();
 
     if (memberError || !member) {
-      return NextResponse.json({ error: "Membership record not found" }, { status: 404 });
+      return NextResponse.json({ error: "Failed to update membership status" }, { status: 500 });
     }
 
     // 3. Create notification for applicant
@@ -81,30 +146,50 @@ export async function POST(
            });
        }
 
-       // Handle Role Vacancies if applicable
+       // Sync role open/closed state after this approval
        if (member.project_role_id) {
-         // Count approved members for this role
          const { count: approvedCount } = await supabase
            .from("project_members")
-           .select("id", { count: 'exact', head: true })
+           .select("id", { count: "exact", head: true })
            .eq("project_role_id", member.project_role_id)
            .eq("status", "approved");
-           
-         // Get role vacancy size
-         const { data: role } = await supabase
+
+         const { data: roleData } = await supabase
            .from("project_roles")
            .select("vacancies")
            .eq("id", member.project_role_id)
            .single();
-           
-         if (role && (approvedCount || 0) >= role.vacancies) {
-           // Close the role
+
+         if (roleData) {
+           const isFull = (approvedCount ?? 0) >= roleData.vacancies;
            await supabase
              .from("project_roles")
-             .update({ is_open: false })
+             .update({ is_open: !isFull })
              .eq("id", member.project_role_id);
          }
        }
+    }
+
+    // 4b. (If rejected) Re-open the role if it had been closed but a slot freed up
+    if (status === 'rejected' && member.project_role_id) {
+      const { count: approvedCount } = await supabase
+        .from("project_members")
+        .select("id", { count: "exact", head: true })
+        .eq("project_role_id", member.project_role_id)
+        .eq("status", "approved");
+
+      const { data: roleData } = await supabase
+        .from("project_roles")
+        .select("vacancies")
+        .eq("id", member.project_role_id)
+        .single();
+
+      if (roleData && (approvedCount ?? 0) < roleData.vacancies) {
+        await supabase
+          .from("project_roles")
+          .update({ is_open: true })
+          .eq("id", member.project_role_id);
+      }
     }
 
     // 5. Update the original notification if notificationId is provided

@@ -81,11 +81,24 @@ export async function GET(
       (workspaces || []).map((workspace) => [workspace.project_id, workspace]),
     );
 
+    // Batch-fetch approved member counts (single query, no N+1)
+    const { data: memberRows } = await supabase
+      .from("project_members")
+      .select("project_id")
+      .in("project_id", projectIds)
+      .eq("status", "approved");
+
+    const countMap = new Map<string, number>();
+    for (const row of memberRows || []) {
+      countMap.set(row.project_id, (countMap.get(row.project_id) ?? 0) + 1);
+    }
+
     const projectsWithWorkspaces = projects.map((project) => {
       const workspace = workspaceByProject.get(project.id);
       return {
         ...project,
         workspaces: workspace ? [{ id: workspace.id }] : [],
+        current_members_count: countMap.get(project.id) ?? 0,
       };
     });
 

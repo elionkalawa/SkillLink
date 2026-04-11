@@ -59,16 +59,24 @@ export async function GET(
         .eq("project_id", id)
         .eq("user_id", currentUser.id)
         .maybeSingle();
-      
+
       membership = memberData;
     }
 
-    return NextResponse.json({ 
-      ...project, 
-      owner, 
+    // Count approved members so the UI can show real team capacity
+    const { count: currentMembersCount } = await supabase
+      .from("project_members")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", id)
+      .eq("status", "approved");
+
+    return NextResponse.json({
+      ...project,
+      owner,
       roles: roles || [],
       membership,
-      workspace: workspace || null
+      workspace: workspace || null,
+      current_members_count: currentMembersCount ?? 0,
     });
   } catch (error) {
     console.error("API GET Project exception:", error);
@@ -109,6 +117,7 @@ export async function PATCH(
       "title",
       "description",
       "category",
+      "location",
       "skills_required",
       "tags",
       "max_team_size",
